@@ -2,14 +2,36 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	jwt "github.com/golang-jwt/jwt/v5"
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
+	"log"
 	"net/http"
+	"time"
 )
 
-var envFile, _ = godotenv.Read(".env")
+var db *sql.DB
+var envFile, err = godotenv.Read(".env")
+var jwtSecretKey = envFile["secretKey"]
+
+func init() {
+
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
+
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		envFile["host"], envFile["port"], envFile["user"], envFile["password"], envFile["dbname"], envFile["sslmode"])
+	db, err = sql.Open("postgres", connStr)
+
+	if err != nil {
+		log.Fatalf("Error opening database: %v", err)
+	}
+}
 
 type User struct {
 	id       int
@@ -34,19 +56,12 @@ func HealthCheck(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 func Register(writer http.ResponseWriter, request *http.Request) {
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", envFile["host"], envFile["port"], envFile["user"], envFile["password"], envFile["dbname"], envFile["sslmode"])
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-	defer db.Close()
 
 	login := request.FormValue("login")
 	password := request.FormValue("password")
 
 	existingUser := User{}
-	err = db.QueryRow("SELECT username FROM users WHERE username = $1", login).Scan(&existingUser.username)
+	err := db.QueryRow("SELECT username FROM users WHERE username = $1", login).Scan(&existingUser.username)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// Username doesn't exist, proceed with registration
@@ -72,43 +87,98 @@ func Register(writer http.ResponseWriter, request *http.Request) {
 	http.Error(writer, "User already exists", http.StatusBadRequest)
 }
 func Login(writer http.ResponseWriter, request *http.Request) {
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", envFile["host"], envFile["port"], envFile["user"], envFile["password"], envFile["dbname"], envFile["sslmode"])
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		http.Error(writer, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-	defer db.Close()
 
 	login := request.FormValue("login")
 	password := request.FormValue("password")
 
 	rows := db.QueryRow("SELECT * FROM users WHERE username = $1", login)
 	user := User{}
-	err = rows.Scan(&user.id, &user.username, &user.password)
+	_ = rows.Scan(&user.id, &user.username, &user.password)
 	if user.username == "" {
 		fmt.Fprintf(writer, "User not found")
 		return
 	}
 	if CheckPasswordHash(password, user.password) {
-		_, err = fmt.Fprintf(writer, "Logged in")
+		payload := jwt.MapClaims{
+			"sub": user.username,
+			"exp": time.Now().Add(time.Hour * 72).Unix(),
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
+		t, err := token.SignedString([]byte(jwtSecretKey))
+
+		if err != nil {
+			http.Error(writer, "jwt token signing", http.StatusBadRequest)
+		}
+
+		json.NewEncoder(writer).Encode(t)
+
 	} else {
-		_, err = fmt.Fprintf(writer, "Wrong password")
+		fmt.Fprintf(writer, "Wrong password")
 	}
 }
 func UpdateUser(writer http.ResponseWriter, request *http.Request) {
-	_, err := fmt.Fprintf(writer, "UpdateUser")
-	if err != nil {
-		return
-	}
+	updateType := mux.Vars(request)["type"]
+	login := request.FormValue("login")
+	password := request.FormValue("password")
+	rows := db.QueryRow("SELECT * FROM users WHERE username = $1", login)
+	user := User{}
+	_ = rows.Scan(&user.id, &user.username, &user.password)
+	if CheckPasswordHash(password, user.password) {
+		if rows != nil {
+			if updateType == "password" {
+				newPassword := request.FormValue("new-password")
+				hashPass, _ := HashPassword(newPassword)
+				db.Exec("UPDATE users SET password = $1 WHERE username = $2", hashPass, login)
 
+			}
+			if updateType == "login" {
+				newLogin := request.FormValue("new-login")
+				db.Exec("UPDATE users SET username = $1 WHERE username = $2", newLogin, login)
+			}
+		} else {
+			fmt.Fprintf(writer, "User not found write credentials")
+		}
+	}
+}
+func DeleteUser(writer http.ResponseWriter, request *http.Request) {
+	login := request.FormValue("login")
+	password := request.FormValue("password")
+	rows := db.QueryRow("SELECT * FROM users WHERE username = $1", login)
+	user := User{}
+	_ = rows.Scan(&user.id, &user.username, &user.password)
+	if CheckPasswordHash(password, user.password) {
+		if rows != nil {
+			db.Exec("DELETE FROM users WHERE username = $1", login)
+			fmt.Fprintf(writer, "User deleted")
+		} else {
+			fmt.Fprintf(writer, "User not found write credentials")
+		}
+	} else {
+		fmt.Fprintf(writer, "Wrong password")
+	}
 }
 func GetAllUsers(writer http.ResponseWriter, request *http.Request) {
-	_, err := fmt.Fprintf(writer, "GetAllUsers")
+	rows, err := db.Query("SELECT * FROM users")
+	if err != nil {
+		http.Error(writer, "Failed to fetch users", http.StatusInternalServerError)
+		return
+	}
+	users := []User{}
+	for rows.Next() {
+		user := User{}
+		err = rows.Scan(&user.id, &user.username, &user.password)
+		user.password = ""
+		fmt.Println(user)
+		if err != nil {
+			http.Error(writer, "Failed to fetch users", http.StatusInternalServerError)
+			return
+		}
+		users = append(users, user)
+	}
+	_, err = fmt.Fprintf(writer, "%v", users)
 	if err != nil {
 		return
 	}
-
 }
 func SendMessage(writer http.ResponseWriter, request *http.Request) {
 	_, err := fmt.Fprintf(writer, "SendMessage")
