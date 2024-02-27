@@ -11,6 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -37,6 +38,43 @@ type User struct {
 	id       int
 	username string
 	password string
+}
+
+func jwtPayloadFromRequest(w http.ResponseWriter, r *http.Request) (jwt.MapClaims, bool) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		http.Error(w, "Authorization header is required", http.StatusUnauthorized)
+		return nil, false
+	}
+
+	// Проверяем формат токена
+	const bearerPrefix = "Bearer "
+	if !strings.HasPrefix(authHeader, bearerPrefix) {
+		http.Error(w, "Invalid token format", http.StatusUnauthorized)
+		return nil, false
+	}
+
+	tokenString := authHeader[len(bearerPrefix):]
+
+	// Парсинг и валидация токена
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		// Замените 'yourSecretKey' на ваш реальный ключ.
+		return []byte(envFile["secretKey"]), nil
+	})
+
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return nil, false
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		// Токен валиден, и claims успешно извлечены
+		return claims, true
+	} else {
+		// Токен невалиден или claims не могут быть приведены к типу MapClaims
+		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+		return nil, false
+	}
 }
 
 func HashPassword(password string) (string, error) {
@@ -158,6 +196,11 @@ func DeleteUser(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 func GetAllUsers(writer http.ResponseWriter, request *http.Request) {
+	payload, check := jwtPayloadFromRequest(writer, request)
+	fmt.Println(payload)
+	if !check {
+		return
+	}
 	rows, err := db.Query("SELECT * FROM users")
 	if err != nil {
 		http.Error(writer, "Failed to fetch users", http.StatusInternalServerError)
