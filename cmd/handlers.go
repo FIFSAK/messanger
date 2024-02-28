@@ -58,7 +58,6 @@ func jwtPayloadFromRequest(w http.ResponseWriter, r *http.Request) (jwt.MapClaim
 
 	// Парсинг и валидация токена
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Замените 'yourSecretKey' на ваш реальный ключ.
 		return []byte(envFile["secretKey"]), nil
 	})
 
@@ -155,49 +154,59 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 func UpdateUser(writer http.ResponseWriter, request *http.Request) {
-	updateType := mux.Vars(request)["type"]
-	login := request.FormValue("login")
-	password := request.FormValue("password")
-	rows := db.QueryRow("SELECT * FROM users WHERE username = $1", login)
-	user := User{}
-	_ = rows.Scan(&user.id, &user.username, &user.password)
-	if CheckPasswordHash(password, user.password) {
-		if rows != nil {
-			if updateType == "password" {
-				newPassword := request.FormValue("new-password")
-				hashPass, _ := HashPassword(newPassword)
-				db.Exec("UPDATE users SET password = $1 WHERE username = $2", hashPass, login)
-
-			}
-			if updateType == "login" {
-				newLogin := request.FormValue("new-login")
-				db.Exec("UPDATE users SET username = $1 WHERE username = $2", newLogin, login)
-			}
-		} else {
-			fmt.Fprintf(writer, "User not found write credentials")
-		}
+	payload, check := jwtPayloadFromRequest(writer, request)
+	if !check {
+		return
 	}
-}
-func DeleteUser(writer http.ResponseWriter, request *http.Request) {
-	login := request.FormValue("login")
-	password := request.FormValue("password")
+	updateType := mux.Vars(request)["type"]
+	login := payload["sub"].(string)
 	rows := db.QueryRow("SELECT * FROM users WHERE username = $1", login)
 	user := User{}
 	_ = rows.Scan(&user.id, &user.username, &user.password)
-	if CheckPasswordHash(password, user.password) {
-		if rows != nil {
-			db.Exec("DELETE FROM users WHERE username = $1", login)
-			fmt.Fprintf(writer, "User deleted")
-		} else {
-			fmt.Fprintf(writer, "User not found write credentials")
+
+	if rows != nil {
+		if updateType == "password" {
+			newPassword := request.FormValue("new-password")
+			hashPass, _ := HashPassword(newPassword)
+			db.Exec("UPDATE users SET password = $1 WHERE username = $2", hashPass, login)
+
+		}
+		if updateType == "login" {
+			newLogin := request.FormValue("new-login")
+			existingUser := User{}
+			err := db.QueryRow("SELECT username FROM users WHERE username = $1", login).Scan(&existingUser.username)
+			if err == nil {
+				db.Exec("UPDATE users SET username = $1 WHERE username = $2", newLogin, login)
+			} else {
+				fmt.Fprintf(writer, "User with this login already exists")
+			}
 		}
 	} else {
-		fmt.Fprintf(writer, "Wrong password")
+		fmt.Fprintf(writer, "User not found write credentials")
 	}
 }
+
+func DeleteUser(writer http.ResponseWriter, request *http.Request) {
+	payload, check := jwtPayloadFromRequest(writer, request)
+	if !check {
+		return
+	}
+	login := payload["sub"].(string)
+	rows := db.QueryRow("SELECT * FROM users WHERE username = $1", login)
+	user := User{}
+	_ = rows.Scan(&user.id, &user.username, &user.password)
+
+	if rows != nil {
+		db.Exec("DELETE FROM users WHERE username = $1", login)
+		fmt.Fprintf(writer, "User deleted")
+	} else {
+		fmt.Fprintf(writer, "User not found write credentials")
+	}
+}
+
 func GetAllUsers(writer http.ResponseWriter, request *http.Request) {
 	payload, check := jwtPayloadFromRequest(writer, request)
-	fmt.Println(payload)
+	fmt.Println(payload["sub"])
 	if !check {
 		return
 	}
