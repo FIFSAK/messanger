@@ -168,8 +168,13 @@ func UpdateUser(writer http.ResponseWriter, request *http.Request) {
 		if updateType == "password" {
 			newPassword := request.FormValue("new-password")
 			hashPass, _ := HashPassword(newPassword)
-			db.Exec("UPDATE users SET password = $1 WHERE username = $2", hashPass, login)
-
+			_, err := db.Exec("UPDATE users SET password = $1 WHERE username = $2", hashPass, login)
+			if err != nil {
+				log.Println("Error updating password:", err)
+				fmt.Fprintf(writer, "Failed to update password")
+				return
+			}
+			fmt.Fprintf(writer, "updated password successfully")
 		}
 		if updateType == "login" {
 			newLogin := request.FormValue("new-login")
@@ -177,6 +182,7 @@ func UpdateUser(writer http.ResponseWriter, request *http.Request) {
 			err := db.QueryRow("SELECT username FROM users WHERE username = $1", login).Scan(&existingUser.username)
 			if err == nil {
 				db.Exec("UPDATE users SET username = $1 WHERE username = $2", newLogin, login)
+				fmt.Fprintf(writer, "updated login successfully")
 			} else {
 				fmt.Fprintf(writer, "User with this login already exists")
 			}
