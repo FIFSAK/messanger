@@ -1,29 +1,16 @@
 # Messanger project
 ## Rest API
-- **Register a New User**
-  - `POST /register`
-- **Login**
-  - `GET /login`
-- **Update User Authentication Type**
-  - `PATCH /login/{type}`
-- **Delete User**
-  - `DELETE /login`
+'POST /register
+GET /login 
+PATCH /login/{type} 
+DELETE /login 
+GET /users 
+POST /message/{id} 
+UPDATE /message/{id} 
+DELETE /message/{id} 
+GET /notifications'
 
-### User Information
-- **Retrieve All Users**
-  - `GET /users`
-
-### Messaging
-- **Send a Message**
-  - `POST /message/{id}`
-- **Update a Message**
-  - `UPDATE /message/{id}`
-- **Delete a Message**
-  - `DELETE /message/{id}`
-
-### Notifications
-- **Retrieve Notifications**
-  - `GET /notifications`
+'
 Database Structure
 Table Users {
   user_id SERIAL [pk]
@@ -38,3 +25,4 @@ Table Messages {
   message_text TEXT [not null]
   sent_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
 }
+'
