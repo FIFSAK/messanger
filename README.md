@@ -1,8 +1,5 @@
-# Project API and Database Structure
-
-## API Endpoints
-
-### User Management and Authentication
+# Messanger project
+## Rest API
 - **Register a New User**
   - `POST /register`
 - **Login**
