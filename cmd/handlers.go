@@ -6,84 +6,27 @@ import (
 	"fmt"
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
-	"golang.org/x/crypto/bcrypt"
 	"log"
+	. "messanger/pkg/auth"
+	. "messanger/pkg/models"
 	"net/http"
-	"strings"
+	"os"
 	"time"
 )
 
 var db *sql.DB
-var envFile, err = godotenv.Read(".env")
-var jwtSecretKey = envFile["secretKey"]
+var jwtSecretKey = os.Getenv("secretKey")
 
 func init() {
 
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
-
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		envFile["host"], envFile["port"], envFile["user"], envFile["password"], envFile["dbname"], envFile["sslmode"])
-	db, err = sql.Open("postgres", connStr)
-
+		os.Getenv("host"), os.Getenv("port"), os.Getenv("user"), os.Getenv("password"), os.Getenv("dbname"), os.Getenv("sslmode"))
+	db, _ = sql.Open("postgres", connStr)
+	err := db.Ping()
 	if err != nil {
-		log.Fatalf("Error opening database: %v", err)
+		log.Fatal(err)
 	}
-}
-
-type User struct {
-	id       int
-	username string
-	password string
-}
-
-func jwtPayloadFromRequest(w http.ResponseWriter, r *http.Request) (jwt.MapClaims, bool) {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		http.Error(w, "Authorization header is required", http.StatusUnauthorized)
-		return nil, false
-	}
-
-	// Проверяем формат токена
-	const bearerPrefix = "Bearer "
-	if !strings.HasPrefix(authHeader, bearerPrefix) {
-		http.Error(w, "Invalid token format", http.StatusUnauthorized)
-		return nil, false
-	}
-
-	tokenString := authHeader[len(bearerPrefix):]
-
-	// Парсинг и валидация токена
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return []byte(envFile["secretKey"]), nil
-	})
-
-	if err != nil {
-		http.Error(w, "Invalid token", http.StatusUnauthorized)
-		return nil, false
-	}
-
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		// Токен валиден, и claims успешно извлечены
-		return claims, true
-	} else {
-		// Токен невалиден или claims не могут быть приведены к типу MapClaims
-		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
-		return nil, false
-	}
-}
-
-func HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	return string(bytes), err
-}
-
-func CheckPasswordHash(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
 }
 
 func HealthCheck(writer http.ResponseWriter, request *http.Request) {
@@ -98,7 +41,7 @@ func Register(writer http.ResponseWriter, request *http.Request) {
 	password := request.FormValue("password")
 
 	existingUser := User{}
-	err := db.QueryRow("SELECT username FROM users WHERE username = $1", login).Scan(&existingUser.username)
+	err := db.QueryRow("SELECT username FROM users WHERE username = $1", login).Scan(&existingUser.Username)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// Username doesn't exist, proceed with registration
@@ -130,14 +73,14 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 
 	rows := db.QueryRow("SELECT * FROM users WHERE username = $1", login)
 	user := User{}
-	_ = rows.Scan(&user.id, &user.username, &user.password)
-	if user.username == "" {
+	_ = rows.Scan(&user.Id, &user.Username, &user.Password)
+	if user.Username == "" {
 		fmt.Fprintf(writer, "User not found")
 		return
 	}
-	if CheckPasswordHash(password, user.password) {
+	if CheckPasswordHash(password, user.Password) {
 		payload := jwt.MapClaims{
-			"sub": user.username,
+			"sub": user.Username,
 			"exp": time.Now().Add(time.Hour * 72).Unix(),
 		}
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
@@ -154,7 +97,7 @@ func Login(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 func UpdateUser(writer http.ResponseWriter, request *http.Request) {
-	payload, check := jwtPayloadFromRequest(writer, request)
+	payload, check := JwtPayloadFromRequest(writer, request)
 	if !check {
 		return
 	}
@@ -162,7 +105,7 @@ func UpdateUser(writer http.ResponseWriter, request *http.Request) {
 	login := payload["sub"].(string)
 	rows := db.QueryRow("SELECT * FROM users WHERE username = $1", login)
 	user := User{}
-	_ = rows.Scan(&user.id, &user.username, &user.password)
+	_ = rows.Scan(&user.Id, &user.Username, &user.Password)
 
 	if rows != nil {
 		if updateType == "password" {
@@ -179,7 +122,7 @@ func UpdateUser(writer http.ResponseWriter, request *http.Request) {
 		if updateType == "login" {
 			newLogin := request.FormValue("new-login")
 			existingUser := User{}
-			err := db.QueryRow("SELECT username FROM users WHERE username = $1", login).Scan(&existingUser.username)
+			err := db.QueryRow("SELECT username FROM users WHERE username = $1", login).Scan(&existingUser.Username)
 			if err == nil {
 				db.Exec("UPDATE users SET username = $1 WHERE username = $2", newLogin, login)
 				fmt.Fprintf(writer, "updated login successfully")
@@ -193,14 +136,14 @@ func UpdateUser(writer http.ResponseWriter, request *http.Request) {
 }
 
 func DeleteUser(writer http.ResponseWriter, request *http.Request) {
-	payload, check := jwtPayloadFromRequest(writer, request)
+	payload, check := JwtPayloadFromRequest(writer, request)
 	if !check {
 		return
 	}
 	login := payload["sub"].(string)
 	rows := db.QueryRow("SELECT * FROM users WHERE username = $1", login)
 	user := User{}
-	_ = rows.Scan(&user.id, &user.username, &user.password)
+	_ = rows.Scan(&user.Id, &user.Username, &user.Password)
 
 	if rows != nil {
 		db.Exec("DELETE FROM users WHERE username = $1", login)
@@ -211,7 +154,7 @@ func DeleteUser(writer http.ResponseWriter, request *http.Request) {
 }
 
 func GetAllUsers(writer http.ResponseWriter, request *http.Request) {
-	payload, check := jwtPayloadFromRequest(writer, request)
+	payload, check := JwtPayloadFromRequest(writer, request)
 	fmt.Println(payload["sub"])
 	if !check {
 		return
@@ -224,8 +167,8 @@ func GetAllUsers(writer http.ResponseWriter, request *http.Request) {
 	users := []User{}
 	for rows.Next() {
 		user := User{}
-		err = rows.Scan(&user.id, &user.username, &user.password)
-		user.password = ""
+		err = rows.Scan(&user.Id, &user.Username, &user.Password)
+		user.Password = ""
 		fmt.Println(user)
 		if err != nil {
 			http.Error(writer, "Failed to fetch users", http.StatusInternalServerError)

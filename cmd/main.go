@@ -2,10 +2,17 @@ package main
 
 import (
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
+	"log"
 	"net/http"
 )
 
 func main() {
+
+	if err := godotenv.Load(".env"); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	router := mux.NewRouter()
 
 	router.HandleFunc("/health-check", HealthCheck).Methods("GET")
