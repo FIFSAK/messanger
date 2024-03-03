@@ -27,36 +27,34 @@ type User struct {
 	Password string
 }
 
-// RegisterUser регистрирует нового пользователя в системе.
 func (m *UserModel) RegisterUser(login string, password string, writer http.ResponseWriter) error {
-	// Проверяем, существует ли пользователь
 	var username string
 	err := m.DB.QueryRow("SELECT username FROM users WHERE username = $1", login).Scan(&username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			// Имя пользователя не существует, продолжаем регистрацию
+
 			hashPass, err := HashPassword(password)
 			if err != nil {
 				http.Error(writer, "Failed to hash password", http.StatusInternalServerError)
-				return err // Возвращаем ошибку наверх
+				return err
 			}
 			_, err = m.DB.Exec("INSERT INTO users (username, password) VALUES ($1, $2)", login, hashPass)
 			if err != nil {
 				http.Error(writer, "Failed to insert user into database", http.StatusInternalServerError)
-				return err // Возвращаем ошибку наверх
+				return err
 			}
 			_, err = fmt.Fprintf(writer, "User registered successfully")
 			if err != nil {
 				return err
-			} // Убираем _, так как мы игнорируем возвращаемое значение
-			return nil // Возвращаем nil, указывая на успешное выполнение
+			}
+			return nil
 		}
 		http.Error(writer, "Error checking existing user", http.StatusInternalServerError)
-		return err // Возвращаем ошибку наверх
+		return err
 	}
 
 	http.Error(writer, "User already exists", http.StatusBadRequest)
-	return nil // Здесь нет ошибки, но пользователь уже существует
+	return nil
 }
 func (m *UserModel) LoginUser(login string, password string, writer http.ResponseWriter) error {
 	rows := m.DB.QueryRow("SELECT * FROM users WHERE username = $1", login)
