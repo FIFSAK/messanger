@@ -5,7 +5,7 @@ import (
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 	. "messanger/pkg/auth"
-	. "messanger/pkg/models"
+	"messanger/pkg/models"
 	"net/http"
 )
 
@@ -15,57 +15,62 @@ func HealthCheck(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 }
-func Register(writer http.ResponseWriter, request *http.Request) {
+func RegisterHandler(userModel *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		login := request.FormValue("login")
+		password := request.FormValue("password")
 
-	login := request.FormValue("login")
-	password := request.FormValue("password")
-	user := User{}
-	err := user.RegisterUser(login, password, writer)
-	if err != nil {
-		return
-	}
-
-}
-func Login(writer http.ResponseWriter, request *http.Request) {
-
-	login := request.FormValue("login")
-	password := request.FormValue("password")
-
-	user := User{}
-	err := user.LoginUser(login, password, writer)
-	if err != nil {
-		return
+		err := userModel.RegisterUser(login, password, writer)
+		if err != nil {
+			// здесь вы уже обработали ошибку внутри RegisterUser
+			return
+		}
 	}
 }
-func Update(writer http.ResponseWriter, request *http.Request) {
-	payload, check := JwtPayloadFromRequest(writer, request)
-	if !check {
-		return
+
+func Login(userModel *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		login := request.FormValue("login")
+		password := request.FormValue("password")
+
+		err := userModel.LoginUser(login, password, writer)
+		if err != nil {
+			return
+		}
 	}
-	updateType := mux.Vars(request)["type"]
-	login := payload["sub"].(string)
-	user := User{}
-	user.UpdateUser(login, updateType, writer, request)
+}
+func Update(userModel *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		updateType := mux.Vars(request)["type"]
+		login := payload["sub"].(string)
+		userModel.UpdateUser(login, updateType, writer, request)
+	}
 }
 
-func DeleteUserHandler(writer http.ResponseWriter, request *http.Request) {
-	payload, check := JwtPayloadFromRequest(writer, request)
-	if !check {
-		return
+func DeleteUserHandler(userModel *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		login := payload["sub"].(string)
+		userModel.DeleteUser(login, writer)
 	}
-	login := payload["sub"].(string)
-	user := User{}
-	user.DeleteUser(login, writer)
 }
 
-func GetAllUsersHandler(writer http.ResponseWriter, request *http.Request) {
-	payload, check := JwtPayloadFromRequest(writer, request)
-	fmt.Println(payload["sub"])
-	if !check {
-		return
+func GetAllUsersHandler(userModel *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		fmt.Println(payload["sub"])
+		if !check {
+			return
+		}
+		userModel.GetAllUsers(writer)
 	}
-	user := User{}
-	user.GetAllUsers(writer)
 }
 func SendMessage(writer http.ResponseWriter, request *http.Request) {
 	_, err := fmt.Fprintf(writer, "SendMessage")
