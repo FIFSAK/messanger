@@ -66,8 +66,8 @@ func setupRoutes(router *mux.Router, userModel *models.UserModel) {
 	router.HandleFunc("/login/{type}", Update(userModel)).Methods("PATCH")
 	router.HandleFunc("/login", DeleteUserHandler(userModel)).Methods("DELETE")
 	router.HandleFunc("/users", GetAllUsersHandler(userModel)).Methods("GET")
-	router.HandleFunc("/message/{id}", SendMessage).Methods("POST")
-	router.HandleFunc("/message/{id}", UpdateMessage).Methods("UPDATE")
-	router.HandleFunc("/message/{id}", DeleteMessage).Methods("DELETE")
-	router.HandleFunc("/notifications", Notifications).Methods("GET")
+	router.HandleFunc("/message", SendMessageHandler(userModel)).Methods("POST")
+	router.HandleFunc("/message/{id}", UpdateMessageHandler).Methods("UPDATE")
+	router.HandleFunc("/message/{id}", DeleteMessageHandler).Methods("DELETE")
+	router.HandleFunc("/notifications", NotificationsHandler).Methods("GET")
 }

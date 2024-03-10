@@ -70,6 +70,7 @@ func (m *UserModel) LoginUser(login string, password string, writer http.Respons
 	if CheckPasswordHash(password, user.Password) {
 		payload := jwt.MapClaims{
 			"sub": user.Username,
+			"id":  user.Id,
 			"exp": time.Now().Add(time.Hour * 72).Unix(),
 		}
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)

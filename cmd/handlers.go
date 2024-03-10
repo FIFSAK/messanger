@@ -7,6 +7,7 @@ import (
 	. "messanger/pkg/auth"
 	"messanger/pkg/models"
 	"net/http"
+	"strconv"
 )
 
 func HealthCheck(writer http.ResponseWriter, request *http.Request) {
@@ -72,27 +73,41 @@ func GetAllUsersHandler(userModel *models.UserModel) http.HandlerFunc {
 		userModel.GetAllUsers(writer)
 	}
 }
-func SendMessage(writer http.ResponseWriter, request *http.Request) {
-	_, err := fmt.Fprintf(writer, "SendMessage")
-	if err != nil {
+func SendMessageHandler(userModel *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		senderId, ok := payload["id"].(float64)
+		if !ok {
+			http.Error(writer, "Invalid sender ID", http.StatusBadRequest)
+			return
+		}
+		receiverId, _ := strconv.ParseInt(request.FormValue("receiver_id"), 10, 64)
+		messageText := request.FormValue("message")
+		err := userModel.SendMessage(senderId, int(receiverId), messageText)
+		if err != nil {
+			return
+		}
+
+	}
+}
+func UpdateMessageHandler(writer http.ResponseWriter, request *http.Request) {
+	_, check := JwtPayloadFromRequest(writer, request)
+	if !check {
 		return
 	}
 }
-func UpdateMessage(writer http.ResponseWriter, request *http.Request) {
-	_, err := fmt.Fprintf(writer, "UpdateMessage")
-	if err != nil {
+func DeleteMessageHandler(writer http.ResponseWriter, request *http.Request) {
+	_, check := JwtPayloadFromRequest(writer, request)
+	if !check {
 		return
 	}
 }
-func DeleteMessage(writer http.ResponseWriter, request *http.Request) {
-	_, err := fmt.Fprintf(writer, "DeleteMessage")
-	if err != nil {
-		return
-	}
-}
-func Notifications(writer http.ResponseWriter, request *http.Request) {
-	_, err := fmt.Fprintf(writer, "Notifications")
-	if err != nil {
+func NotificationsHandler(writer http.ResponseWriter, request *http.Request) {
+	_, check := JwtPayloadFromRequest(writer, request)
+	if !check {
 		return
 	}
 }
