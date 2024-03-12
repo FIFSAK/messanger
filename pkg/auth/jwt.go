@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"os"
@@ -28,8 +27,6 @@ func JwtPayloadFromRequest(w http.ResponseWriter, r *http.Request) (jwt.MapClaim
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return []byte(jwtSecretKey), nil
 	})
-	fmt.Println(err)
-	fmt.Println(token)
 	if err != nil {
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return nil, false

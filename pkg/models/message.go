@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type Message struct {
 	id          int
@@ -11,8 +13,9 @@ type Message struct {
 	readed      bool
 }
 
-func (m *UserModel) SendMessage(senderId float64, receiverId int, messageText string) error {
+func (m *UserModel) SendMessage(senderId int, receiverId int, messageText string) error {
 	_, err := m.DB.Exec("INSERT INTO messages (sender_id, receiver_id, message_text) VALUES ($1, $2, $3)", senderId, receiverId, messageText)
+
 	if err != nil {
 		return err
 	}

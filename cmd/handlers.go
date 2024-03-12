@@ -86,7 +86,7 @@ func SendMessageHandler(userModel *models.UserModel) http.HandlerFunc {
 		}
 		receiverId, _ := strconv.ParseInt(request.FormValue("receiver_id"), 10, 64)
 		messageText := request.FormValue("message")
-		err := userModel.SendMessage(senderId, int(receiverId), messageText)
+		err := userModel.SendMessage(int(senderId), int(receiverId), messageText)
 		if err != nil {
 			return
 		}
