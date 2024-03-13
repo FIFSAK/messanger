@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -93,21 +94,110 @@ func SendMessageHandler(userModel *models.UserModel) http.HandlerFunc {
 
 	}
 }
-func UpdateMessageHandler(writer http.ResponseWriter, request *http.Request) {
-	_, check := JwtPayloadFromRequest(writer, request)
-	if !check {
-		return
+func UpdateMessageHandler(userModel *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		senderId, ok := payload["id"].(float64)
+		if !ok {
+			http.Error(writer, "Invalid sender ID", http.StatusBadRequest)
+			return
+		}
+		receiverId, _ := strconv.ParseInt(request.FormValue("receiver_id"), 10, 64)
+		messageText := request.FormValue("message")
+		err := userModel.UpdateMessage(int(senderId), int(receiverId), messageText)
+		if err != nil {
+			return
+		}
+
 	}
 }
-func DeleteMessageHandler(writer http.ResponseWriter, request *http.Request) {
-	_, check := JwtPayloadFromRequest(writer, request)
-	if !check {
-		return
+func DeleteMessageHandler(userModel *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		senderId, ok := payload["id"].(float64)
+		if !ok {
+			http.Error(writer, "Invalid sender ID", http.StatusBadRequest)
+			return
+		}
+		receiverId, _ := strconv.ParseInt(request.FormValue("receiver_id"), 10, 64)
+		messageId, _ := strconv.ParseInt(request.FormValue("message_id"), 10, 64)
+		err := userModel.DeleteMessage(int(senderId), int(receiverId), int(messageId))
+		if err != nil {
+			return
+		}
+
 	}
 }
-func NotificationsHandler(writer http.ResponseWriter, request *http.Request) {
-	_, check := JwtPayloadFromRequest(writer, request)
-	if !check {
-		return
+
+func GetSendMessageHandler(userModle *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		senderId, ok := payload["id"].(float64)
+		if !ok {
+			http.Error(writer, "Invalid sender ID", http.StatusBadRequest)
+			return
+		}
+		messages, err := userModle.GetSendMessage(int(senderId))
+		if err != nil {
+			return
+		}
+		fmt.Println(messages)
+		err = json.NewEncoder(writer).Encode(messages)
+		if err != nil {
+			return
+		}
+	}
+}
+
+func GetReceivedMessageHandler(userModle *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		receiverId, ok := payload["id"].(float64)
+		if !ok {
+			http.Error(writer, "Invalid receiver ID", http.StatusBadRequest)
+			return
+		}
+		messages, err := userModle.GetReceivedMessage(int(receiverId))
+		if err != nil {
+			return
+		}
+		err = json.NewEncoder(writer).Encode(messages)
+		if err != nil {
+			return
+		}
+	}
+}
+
+func GetUnreadMessageHandler(userModle *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		receiverId, ok := payload["id"].(float64)
+		if !ok {
+			http.Error(writer, "Invalid receiver ID", http.StatusBadRequest)
+			return
+		}
+		messages, err := userModle.GetUnreadedMessage(int(receiverId))
+		if err != nil {
+			return
+		}
+		err = json.NewEncoder(writer).Encode(messages)
+		if err != nil {
+			return
+		}
 	}
 }

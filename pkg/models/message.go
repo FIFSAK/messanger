@@ -1,16 +1,12 @@
 package models
 
-import (
-	"time"
-)
-
 type Message struct {
-	id          int
-	senderId    int
-	receiverId  int
-	messageText string
-	sentAt      string
-	readed      bool
+	Id          int    `json:"id"`
+	SenderId    int    `json:"senderId"`
+	ReceiverId  int    `json:"receiverId"`
+	MessageText string `json:"messageText"`
+	SentAt      string `json:"sentAt"`
+	Readed      bool   `json:"readed"`
 }
 
 func (m *UserModel) SendMessage(senderId int, receiverId int, messageText string) error {
@@ -22,24 +18,24 @@ func (m *UserModel) SendMessage(senderId int, receiverId int, messageText string
 	return nil
 }
 
-func (m *UserModel) UpdateMessage(id int, messageText string) error {
-	_, err := m.DB.Exec("UPDATE messages SET message_text = $1, readed=$2 WHERE id = $3", messageText, time.Now(), id)
+func (m *UserModel) UpdateMessage(senderId int, receiverId int, messageText string) error {
+	_, err := m.DB.Exec("UPDATE messages SET message_text = $1 WHERE sender_id = $2 AND receiver_id = $3 AND readed = $4", messageText, senderId, receiverId, false)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *UserModel) DeleteMessage(id int) error {
-	_, err := m.DB.Exec("DELETE FROM messages WHERE id = $1", id)
+func (m *UserModel) DeleteMessage(senderId int, receiverId int, message_id int) error {
+	_, err := m.DB.Exec("DELETE FROM messages WHERE sender_id = $1 AND receiver_id = $2 AND id = $3", senderId, receiverId, message_id)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *UserModel) getSendMessage(userId int) ([]Message, error) {
-	rows, err := m.DB.Query("SELECT * FROM messages WHERE sender_id = $1", userId)
+func (m *UserModel) GetSendMessage(senderId int) ([]Message, error) {
+	rows, err := m.DB.Query("SELECT * FROM messages WHERE sender_id = $1", senderId)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +43,7 @@ func (m *UserModel) getSendMessage(userId int) ([]Message, error) {
 	var messages []Message
 	for rows.Next() {
 		var message Message
-		err := rows.Scan(&message.id, &message.senderId, &message.receiverId, &message.messageText, &message.sentAt, &message.readed)
+		err := rows.Scan(&message.Id, &message.SenderId, &message.ReceiverId, &message.MessageText, &message.SentAt, &message.Readed)
 		if err != nil {
 			return nil, err
 		}
@@ -56,8 +52,8 @@ func (m *UserModel) getSendMessage(userId int) ([]Message, error) {
 	return messages, nil
 }
 
-func (m *UserModel) getReceivedMessage(userId int) ([]Message, error) {
-	rows, err := m.DB.Query("SELECT * FROM messages WHERE receiver_id = $1", userId)
+func (m *UserModel) GetReceivedMessage(receiverId int) ([]Message, error) {
+	rows, err := m.DB.Query("SELECT * FROM messages WHERE receiver_id = $1 AND readed = true", receiverId)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +61,7 @@ func (m *UserModel) getReceivedMessage(userId int) ([]Message, error) {
 	var messages []Message
 	for rows.Next() {
 		var message Message
-		err := rows.Scan(&message.id, &message.senderId, &message.receiverId, &message.messageText, &message.sentAt, &message.readed)
+		err := rows.Scan(&message.Id, &message.SenderId, &message.ReceiverId, &message.MessageText, &message.SentAt, &message.Readed)
 		if err != nil {
 			return nil, err
 		}
@@ -74,8 +70,12 @@ func (m *UserModel) getReceivedMessage(userId int) ([]Message, error) {
 	return messages, nil
 }
 
-func (m *UserModel) getUnreadedMessage(userId int) ([]Message, error) {
-	rows, err := m.DB.Query("SELECT * FROM messages WHERE receiver_id = $1 AND readed = false", userId)
+func (m *UserModel) GetUnreadedMessage(receiverId int) ([]Message, error) {
+	rows, err := m.DB.Query("SELECT * FROM messages WHERE receiver_id = $1 AND readed = false", receiverId)
+	if err != nil {
+		return nil, err
+	}
+	_, err = m.DB.Exec("UPDATE  messages SET readed = true WHERE receiver_id = $1 and readed = false", receiverId)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (m *UserModel) getUnreadedMessage(userId int) ([]Message, error) {
 	var messages []Message
 	for rows.Next() {
 		var message Message
-		err := rows.Scan(&message.id, &message.senderId, &message.receiverId, &message.messageText, &message.sentAt, &message.readed)
+		err := rows.Scan(&message.Id, &message.SenderId, &message.ReceiverId, &message.MessageText, &message.SentAt, &message.Readed)
 		if err != nil {
 			return nil, err
 		}
