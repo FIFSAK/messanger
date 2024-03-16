@@ -3,14 +3,16 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq" // Postgres driver
 	"log"
 	"messanger/pkg/models"
 	"net/http"
 	"os"
-
-	"github.com/gorilla/mux"
-	_ "github.com/lib/pq" // Postgres driver
 )
 
 func main() {
@@ -56,6 +58,9 @@ func initializeDB() (*sql.DB, error) {
 	if err := db.Ping(); err != nil {
 		return nil, err
 	}
+
+	migrationUp(db)
+
 	return db, nil
 }
 
@@ -72,4 +77,24 @@ func setupRoutes(router *mux.Router, userModel *models.UserModel) {
 	router.HandleFunc("/message", UpdateMessageHandler(userModel)).Methods("PATCH")
 	router.HandleFunc("/message/{id}", DeleteMessageHandler(userModel)).Methods("DELETE")
 	router.HandleFunc("/message/notifications", GetUnreadMessageHandler(userModel)).Methods("GET")
+}
+
+func migrationUp(db *sql.DB) {
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Путь к файлам миграции
+	m, err := migrate.NewWithDatabaseInstance(
+		"file:///usr/src/app/internal/migrations",
+		"postgres", driver)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Применение миграций
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatal(err)
+	}
 }
