@@ -21,10 +21,10 @@ WORKDIR /root/
 COPY --from=builder /usr/src/app/main .
 
 # Copy .env file into the final stage to avoid it being skipped
-COPY --from=builder /usr/src/app/.env .
-
-# Now COPY can find the '.env' file since it has been explicitly copied
-RUN ls -la /root/ && cat /root/.env
+#COPY --from=builder /usr/src/app/.env .
+#
+## Now COPY can find the '.env' file since it has been explicitly copied
+#RUN ls -la /root/ && cat /root/.env
 
 # Expose port 8080 to the outside world
 EXPOSE 8080
