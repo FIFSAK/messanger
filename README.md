@@ -74,6 +74,7 @@
     - **Header:** `Authorization: Bearer <Your API key>`
     - **Response:** list of unread messages
 
+
 ## Database Structure
 
 ```sql
@@ -91,7 +92,6 @@ Table Messages {
   readed BOOLEAN [default: false]
   sent_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
 }
-```
 
 ## Environment variables
 **.env** in the root folder of the project
@@ -111,3 +111,4 @@ PGADMIN_DEFAULT_PASSWORD=your_password
 **Start project first time or after changes** ``` docker-compose up --build```
 
 **otherwise** ```docker-compose up```
+
