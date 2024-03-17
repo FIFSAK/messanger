@@ -29,7 +29,7 @@
 - `PATCH /login/{type}`
     - **Description:** `{type}` can be `login` or `password`.
     - **Header:** `Authorization: Bearer <Your API key>`
-    - **Body:**Use `multipart/form-data` to send the following fields:
+    - **Body:** Use `multipart/form-data` to send the following fields:
       - `new-login` (text): your new login
       - `new-password` (text): your new password
 
