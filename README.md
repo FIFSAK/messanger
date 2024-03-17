@@ -7,26 +7,18 @@
     - **Response:** `OK`
 
 ### User Registration
-- `POST /register`
-    - **Body:** 
-```json lines 
-{ 
-  "login": "your_username",
-  "password": "your_password"
-}
- ```
+- `POST /register`    
+  - **Body:** Use `multipart/form-data` to send the following fields:
+    - `login` (text): your username
+    - `password` (text): your password
 
 ### User Login
 - `GET /login`
     - **Description:** Returns a JWT token.
-    - **Body:** 
-```json lines 
-{ 
-  "login": "your_username",
-  "password": "your_password"
-}
- ```
-  - **Response:**
+    - **Body:** Use `multipart/form-data` to send the following fields:
+      - `login` (text): your username
+      - `password` (text): your password
+- **Response:**
 ```json lines
 {
   "token": "your_jwt_token"
@@ -37,13 +29,9 @@
 - `PATCH /login/{type}`
     - **Description:** `{type}` can be `login` or `password`.
     - **Header:** `Authorization: Bearer <Your API key>`
-    - **Body:**
-```json lines 
-{
-"new-login": "your_username",
-"new-password": "your_password"
-}
- ```
+    - **Body:**Use `multipart/form-data` to send the following fields:
+  - `new-login` (text): your new login
+  - `new-password` (text): your new password
 
 ### Delete Login
 - `DELETE /login`
@@ -63,34 +51,22 @@
 
 ### Send a Message
 - `POST /message`
-    - **Header:** `Authorization: Bearer <Your API key>`
-    - **Body:**
-```json lines 
-{ 
-  "receiver_id": "receiver_id",
-  "message_text": "your_message"
-}
- ```
+  - **Header:** `Authorization: Bearer <Your API key>`
+  - **Body:** Use `multipart/form-data` to send the following fields:
+    - `receiver_id` (text): ID of the receiver
+    - `message_text` (text): The message content
 
 ### Update a Message
 - `PATCH /message`
     - **Header:** `Authorization: Bearer <Your API key>`
-    - **Body:**
-```json lines 
-{ 
-  "message_id": "message_id",
-  "message_text": "your_message"
-}
- ```
+    - **Body:** Use `multipart/form-data` to send the following fields:
+  - `message_id` (text): ID of the message
+  - `message_text` (text): The message content
 ### Delete a Message
 - `DELETE /message`
     - **Header:** `Authorization: Bearer <Your API key>`
-    - **Body:**
-```json lines 
-{ 
-  "message_id": "message_id",
-}
- ```
+    - **Body:**Use `multipart/form-data` to send the following fields:
+  - `message_id` (text): ID of the message
 
 ### Unread Messages Notifications
 - `GET /message/notifications`
