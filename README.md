@@ -1,18 +1,101 @@
-# Messanger project
+# Messenger Project API Documentation
 
-## Rest API
+## REST API Endpoints
+
+### Health Check
 - `GET /health-check`
+    - **Response:** `OK`
+
+### User Registration
 - `POST /register`
+    - **Body:** 
+```json lines 
+{ 
+  "login": "your_username",
+  "password": "your_password"
+}
+ ```
+
+### User Login
 - `GET /login`
+    - **Description:** Returns a JWT token.
+    - **Body:** 
+```json lines 
+{ 
+  "login": "your_username",
+  "password": "your_password"
+}
+ ```
+  - **Response:**
+```json lines
+{
+  "token": "your_jwt_token"
+}
+```
+
+### Update Login or Password
 - `PATCH /login/{type}`
+    - **Description:** `{type}` can be `login` or `password`.
+    - **Header:** `Authorization: Bearer <Your API key>`
+    - **Body:**
+```json lines 
+{
+"new-login": "your_username",
+"new-password": "your_password"
+}
+ ```
+
+### Delete Login
 - `DELETE /login`
+    - **Header:** `Authorization: Bearer <Your API key>`
+
+### List Users
 - `GET /users`
+    - **Header:** `Authorization: Bearer <Your API key>`
+
+### Sent Messages
 - `GET /message/send`
+    - **Header:** `Authorization: Bearer <Your API key>`
+
+### Received Messages
 - `GET /message/received`
+    - **Header:** `Authorization: Bearer <Your API key>`
+
+### Send a Message
 - `POST /message`
+    - **Header:** `Authorization: Bearer <Your API key>`
+    - **Body:**
+```json lines 
+{ 
+  "receiver_id": "receiver_id",
+  "message_text": "your_message"
+}
+ ```
+
+### Update a Message
 - `PATCH /message`
+    - **Header:** `Authorization: Bearer <Your API key>`
+    - **Body:**
+```json lines 
+{ 
+  "message_id": "message_id",
+  "message_text": "your_message"
+}
+ ```
+### Delete a Message
 - `DELETE /message`
+    - **Header:** `Authorization: Bearer <Your API key>`
+    - **Body:**
+```json lines 
+{ 
+  "message_id": "message_id",
+}
+ ```
+
+### Unread Messages Notifications
 - `GET /message/notifications`
+    - **Header:** `Authorization: Bearer <Your API key>`
+    - **Response:** list of unread messages
 
 ## Database Structure
 
@@ -31,120 +114,3 @@ Table Messages {
   readed BOOLEAN [default: false]
   sent_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
 }
-```
-## Environment variables
-**.env** in the root folder of the project
-````
-host=fullstack-postgres
-dbname=your_db_name
-sslmode=disable
-port=5432
-user=your_user
-password=your_password
-secret=your_256_bit_secret
-PGADMIN_DEFAULT_EMAIL=your_email
-PGADMIN_DEFAULT_PASSWORD=your_password
-````
-## Run project
-
-**Start project first time or after changes** ``` docker-compose up --build```
-
-**otherwise** ```docker-compose up```
-
-## api documentation
-- **GET /health-check**
-```json lines
-OK
-```
-- **POST /register**
-```json lines
-{
-  "login": "your_username",
-  "password": "your_password"
-}
-```
-- **GET /login** returns jwt token
-```json lines
-{
-  "login": "your_username",
-  "password": "your_password"
-}
-```
-- **PATCH /login/{type}** type can be `login` or `password` if you want update login or password respectively
-```json lines
-header {
-"Bearer <Your API key>"
-}
-{
-  "new-login": "new_username",
-  "new-password": "new_password"
-}
-```
-- **DELETE /login**
-```json lines
-header {
-    "Bearer <Your API key>"
-}
-```
-- **GET /users**
-```json lines
-header {
-    "Bearer <Your API key>"
-}
-```
-- **GET /message/send** return all your sent messages
-```json lines 
-header {
-    "Bearer <Your API key>"
-}
-```
-- **GET /message/received** return all your received messages
-```json lines
-header {
-    "Bearer <Your API key>"
-}
-```
-- **POST /message**
-```json lines
-header {
-    "Bearer <Your API key>"
-}
-{
-  "receiver_id": "receiver_id",
-  "message_text": "your_message"
-}
-```
-- **PATCH /message**
-```json lines
-header {
-    "Bearer <Your API key>"
-}
-{
-  "message_id": "message_id",
-  "message_text": "your_message"
-}
-```
-- **DELETE /message**
-```json lines
-header {
-    "Bearer <Your API key>"
-}
-{
-  "message_id": "message_id"
-}
-```
-- **GET /message/notifications** return all your unread messages
-```json lines
-header {
-    "Bearer <Your API key>"
-}
-```
-
-
-
-
-
-
-
-
-

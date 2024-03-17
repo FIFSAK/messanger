@@ -18,8 +18,8 @@ func (m *UserModel) SendMessage(senderId int, receiverId int, messageText string
 	return nil
 }
 
-func (m *UserModel) UpdateMessage(senderId int, messageId int, messageText string) error {
-	_, err := m.DB.Exec("UPDATE messages SET message_text = $1 WHERE message_id = $2 AND readed = $3", messageText, messageId, false)
+func (m *UserModel) UpdateMessage(messageId int, messageText string) error {
+	_, err := m.DB.Exec("UPDATE messages SET message_text = $1, readed = $2 WHERE message_id = $3", messageText, false, messageId)
 	if err != nil {
 		return err
 	}
