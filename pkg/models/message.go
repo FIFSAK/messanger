@@ -18,16 +18,16 @@ func (m *UserModel) SendMessage(senderId int, receiverId int, messageText string
 	return nil
 }
 
-func (m *UserModel) UpdateMessage(senderId int, receiverId int, messageText string) error {
-	_, err := m.DB.Exec("UPDATE messages SET message_text = $1 WHERE sender_id = $2 AND receiver_id = $3 AND readed = $4", messageText, senderId, receiverId, false)
+func (m *UserModel) UpdateMessage(senderId int, messageId int, messageText string) error {
+	_, err := m.DB.Exec("UPDATE messages SET message_text = $1 WHERE message_id = $2 AND readed = $3", messageText, messageId, false)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *UserModel) DeleteMessage(senderId int, receiverId int, message_id int) error {
-	_, err := m.DB.Exec("DELETE FROM messages WHERE sender_id = $1 AND receiver_id = $2 AND id = $3", senderId, receiverId, message_id)
+func (m *UserModel) DeleteMessage(message_id int) error {
+	_, err := m.DB.Exec("DELETE FROM messages WHERE message_id = $1", message_id)
 	if err != nil {
 		return err
 	}
