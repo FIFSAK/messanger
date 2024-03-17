@@ -92,7 +92,7 @@ Table Messages {
   readed BOOLEAN [default: false]
   sent_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
 }
-
+```
 ## Environment variables
 **.env** in the root folder of the project
 ````
