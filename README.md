@@ -91,3 +91,23 @@ Table Messages {
   readed BOOLEAN [default: false]
   sent_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
 }
+```
+
+## Environment variables
+**.env** in the root folder of the project
+````
+host=fullstack-postgres
+dbname=your_db_name
+sslmode=disable
+port=5432
+user=your_user
+password=your_password
+secret=your_256_bit_secret
+PGADMIN_DEFAULT_EMAIL=your_email
+PGADMIN_DEFAULT_PASSWORD=your_password
+````
+## Run project
+
+**Start project first time or after changes** ``` docker-compose up --build```
+
+**otherwise** ```docker-compose up```
