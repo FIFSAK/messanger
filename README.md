@@ -1,15 +1,18 @@
 # Messanger project
 
 ## Rest API
+- `GET /health-check`
 - `POST /register`
 - `GET /login`
 - `PATCH /login/{type}`
 - `DELETE /login`
 - `GET /users`
-- `POST /message/{id}`
-- `UPDATE /message/{id}`
-- `DELETE /message/{id}`
-- `GET /notifications`
+- `GET /message/send`
+- `GET /message/received`
+- `POST /message`
+- `PATCH /message`
+- `DELETE /message`
+- `GET /message/notifications`
 
 ## Database Structure
 
@@ -25,6 +28,7 @@ Table Messages {
   sender_id INTEGER [not null, ref: > Users.user_id]
   receiver_id INTEGER [not null, ref: > Users.user_id]
   message_text TEXT [not null]
+  readed BOOLEAN [default: false]
   sent_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
 }
 
