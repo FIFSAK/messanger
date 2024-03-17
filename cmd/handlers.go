@@ -96,38 +96,26 @@ func SendMessageHandler(userModel *models.UserModel) http.HandlerFunc {
 }
 func UpdateMessageHandler(userModel *models.UserModel) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		payload, check := JwtPayloadFromRequest(writer, request)
+		_, check := JwtPayloadFromRequest(writer, request)
 		if !check {
 			return
 		}
-		senderId, ok := payload["id"].(float64)
-		if !ok {
-			http.Error(writer, "Invalid sender ID", http.StatusBadRequest)
-			return
-		}
-		receiverId, _ := strconv.ParseInt(request.FormValue("receiver_id"), 10, 64)
-		messageText := request.FormValue("message")
-		err := userModel.UpdateMessage(int(senderId), int(receiverId), messageText)
+		messageId, _ := strconv.ParseInt(request.FormValue("message_id"), 10, 64)
+		messageText := request.FormValue("message_text")
+		err := userModel.UpdateMessage(int(messageId), messageText)
 		if err != nil {
 			return
 		}
-
 	}
 }
 func DeleteMessageHandler(userModel *models.UserModel) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		payload, check := JwtPayloadFromRequest(writer, request)
+		_, check := JwtPayloadFromRequest(writer, request)
 		if !check {
 			return
 		}
-		senderId, ok := payload["id"].(float64)
-		if !ok {
-			http.Error(writer, "Invalid sender ID", http.StatusBadRequest)
-			return
-		}
-		receiverId, _ := strconv.ParseInt(request.FormValue("receiver_id"), 10, 64)
 		messageId, _ := strconv.ParseInt(request.FormValue("message_id"), 10, 64)
-		err := userModel.DeleteMessage(int(senderId), int(receiverId), int(messageId))
+		err := userModel.DeleteMessage(int(messageId))
 		if err != nil {
 			return
 		}

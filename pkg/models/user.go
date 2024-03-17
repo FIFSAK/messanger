@@ -81,7 +81,11 @@ func (m *UserModel) LoginUser(login string, password string, writer http.Respons
 			http.Error(writer, "jwt token signing", http.StatusBadRequest)
 		}
 
-		err = json.NewEncoder(writer).Encode(t)
+		err = json.NewEncoder(writer).Encode(struct {
+			Token string `json:"token"`
+		}{
+			Token: t,
+		})
 		if err != nil {
 			return err
 		}
