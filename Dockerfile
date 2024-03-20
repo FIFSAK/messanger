@@ -9,6 +9,6 @@ RUN go mod download && \
 FROM alpine:latest
 WORKDIR /root/
 COPY --from=builder /usr/src/app/main .
-COPY --from=builder /usr/src/app/.env .
+#COPY --from=builder /usr/src/app/.env .
 EXPOSE 8080
 CMD ["./main"]
