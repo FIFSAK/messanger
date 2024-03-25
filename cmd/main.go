@@ -7,6 +7,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq" // Postgres driver
 	"log"
 	"messanger/pkg/models"
@@ -16,9 +17,9 @@ import (
 
 func main() {
 	// Load environment variables
-	//if err := godotenv.Load(); err != nil {
-	//	log.Println("Error loading .env file")
-	//}
+	if err := godotenv.Load(); err != nil {
+		log.Println("Error loading .env file")
+	}
 
 	// Initialize the database connection
 	db, err := initializeDB()
