@@ -37,11 +37,16 @@ func main() {
 	setupRoutes(router, userModel)
 
 	// Start the server
-	log.Println("Starting server on :8080")
-	err = http.ListenAndServe(":8080", router)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Порт по умолчанию, если переменная окружения PORT не установлена
+	}
+
+	err = http.ListenAndServe(":"+port, router)
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
+	log.Println("Server started on port", port)
 }
 
 func initializeDB() (*sql.DB, error) {
