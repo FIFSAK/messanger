@@ -96,7 +96,7 @@ Table Messages {
 ## Environment variables
 **.env** in the root folder of the project
 ````
-host=fullstack-postgres
+host=postgres
 dbname=your_db_name
 sslmode=disable
 port=5432
