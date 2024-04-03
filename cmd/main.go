@@ -7,19 +7,17 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq" // Postgres driver
 	"log"
 	"messanger/pkg/models"
 	"net/http"
-	"os"
 )
 
 func main() {
 	// Load environment variables
-	if err := godotenv.Load(); err != nil {
-		log.Println("Error loading .env file")
-	}
+	//if err := godotenv.Load(); err != nil {
+	//	log.Println("Error loading .env file")
+	//}
 
 	// Initialize the database connection
 	db, err := initializeDB()
@@ -38,10 +36,11 @@ func main() {
 	setupRoutes(router, userModel)
 
 	// Start the server
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080" // Порт по умолчанию, если переменная окружения PORT не установлена
-	}
+	//port := os.Getenv("PORT")
+	//if port == "" {
+	//	port = "8080" // Порт по умолчанию, если переменная окружения PORT не установлена
+	//}
+	port := "8080"
 
 	err = http.ListenAndServe(":"+port, router)
 	if err != nil {
@@ -51,11 +50,13 @@ func main() {
 }
 
 func initializeDB() (*sql.DB, error) {
+	//connStr := fmt.Sprintf(
+	//	"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+	//	os.Getenv("host"), os.Getenv("port"), os.Getenv("user"),
+	//	os.Getenv("password"), os.Getenv("dbname"), os.Getenv("sslmode"),
+	//)
 	connStr := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		os.Getenv("host"), os.Getenv("port"), os.Getenv("user"),
-		os.Getenv("password"), os.Getenv("dbname"), os.Getenv("sslmode"),
-	)
+		"host=postgres port=5432 user=postgres password=qwe dbname=messengerdb sslmode=disable")
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err

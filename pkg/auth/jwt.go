@@ -3,7 +3,6 @@ package auth
 import (
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
-	"os"
 	"strings"
 )
 
@@ -22,7 +21,7 @@ func JwtPayloadFromRequest(w http.ResponseWriter, r *http.Request) (jwt.MapClaim
 	}
 
 	tokenString := authHeader[len(bearerPrefix):]
-	jwtSecretKey := os.Getenv("secretKey")
+	jwtSecretKey := "0peLJi9rot1Gv_i6oiCAl5M0o_ti759R-ipx85Z8mSo"
 	// Парсинг и валидация токена
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return []byte(jwtSecretKey), nil

@@ -1,36 +1,12 @@
-version: '3'
-services:
-  app:
-    container_name: main_app
-    build: .
-    ports:
-      - "10000:8080"
-    restart: on-failure
-    volumes:
-      - .:/usr/src/app
-    depends_on:
-      - postgres
-    networks:
-      - fullstack
-
-  postgres:
-    image: postgres:latest
-    container_name: db_postgres
-    environment:
-      - POSTGRES_USER=${user}
-      - POSTGRES_PASSWORD=${password}
-      - POSTGRES_DB=${dbname}
-      - DATABASE_HOST=${host}
-    ports:
-      - '5432:5432'
-    volumes:
-      - database_postgres:/var/lib/postgresql/data
-    networks:
-      - fullstack
-
-volumes:
-  database_postgres:
-
-networks:
-  fullstack:
-    driver: bridge
+build:
+  docker:
+    web: Dockerfile # Указываем Dockerfile для сборки образа вашего приложения
+  # Можно добавить секцию 'worker', если у вас есть фоновые задачи
+release:
+  image: web
+  command:
+    - "/usr/src/app/cmd"
+run:
+  web: # Указываем команду для запуска веб-сервера
+    command: go run /usr/src/app/cmd .
+    # Можно добавить другие типы процессов, если необходимо
