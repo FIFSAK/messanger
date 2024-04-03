@@ -1,4 +1,55 @@
-version: '3'
+#version: '3'
+#services:
+#  app:
+#    container_name: main_app
+#    build: .
+#    ports:
+#      - "10000:8080"
+#    restart: on-failure
+#    volumes:
+#      - .:/usr/src/app
+#    depends_on:
+#      - postgres
+#    networks:
+#      - fullstack
+#
+#  postgres:
+#    image: postgres:latest
+#    container_name: db_postgres
+#    environment:
+#      - POSTGRES_USER=postgres
+#      - POSTGRES_PASSWORD=qwe
+#      - POSTGRES_DB=messengerdb
+#      - DATABASE_HOST=postgres
+#    ports:
+#      - '5432:5432'
+#    volumes:
+#      - database_postgres:/var/lib/postgresql/data
+#    networks:
+#      - fullstack
+#
+##  pgadmin:
+##    image: dpage/pgadmin4
+##    container_name: pgadmin_container
+##    environment:
+##      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+##      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+##    depends_on:
+##      - postgres
+##    ports:
+##      - "5050:80"
+##    networks:
+##      - fullstack
+##    restart: unless-stopped
+#
+#volumes:
+#  database_postgres:
+#
+#networks:
+#  fullstack:
+#    driver: bridge
+version: '3.8'
+
 services:
   app:
     container_name: main_app
@@ -6,12 +57,13 @@ services:
     ports:
       - "10000:8080"
     restart: on-failure
-    volumes:
-      - .:/usr/src/app
     depends_on:
       - postgres
-    networks:
-      - fullstack
+    environment:
+      - DATABASE_HOST=postgres
+      - POSTGRES_DB=messengerdb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=qwe
 
   postgres:
     image: postgres:latest
@@ -20,31 +72,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=qwe
       - POSTGRES_DB=messengerdb
-      - DATABASE_HOST=postgres
     ports:
       - '5432:5432'
-    volumes:
-      - database_postgres:/var/lib/postgresql/data
-    networks:
-      - fullstack
 
-#  pgadmin:
-#    image: dpage/pgadmin4
-#    container_name: pgadmin_container
-#    environment:
-#      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
-#      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
-#    depends_on:
-#      - postgres
-#    ports:
-#      - "5050:80"
-#    networks:
-#      - fullstack
-#    restart: unless-stopped
 
-volumes:
-  database_postgres:
-
-networks:
-  fullstack:
-    driver: bridge
