@@ -17,10 +17,10 @@ services:
     image: postgres:latest
     container_name: db_postgres
     environment:
-      - POSTGRES_USER=${user}
-      - POSTGRES_PASSWORD=${password}
-      - POSTGRES_DB=${dbname}
-      - DATABASE_HOST=${host}
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=qwe
+      - POSTGRES_DB=messengerdb
+      - DATABASE_HOST=postgres
     ports:
       - '5432:5432'
     volumes:
