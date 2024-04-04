@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: messenger
+    runtime: docker
+    plan: free
+    repo: https://github.com/FIFSAK/messanger
+    region: frankfurt
+    branch: main
+    envVars:
+      - host: host
+        sync: false
+      - key: dbname
+        sync: false
+      - key: sslmode
+        sync: false
+      - key: port
+        sync: false
+      - key: user
+        sync: false
+      - key: password
+        sync: false
+      - key: secretKey
+        sync: false
+      - key: PGADMIN_DEFAULT_EMAIL
+        sync: false
+      - key: PGADMIN_DEFAULT_PASSWORD
+        sync: false
