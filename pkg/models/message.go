@@ -10,7 +10,7 @@ type Message struct {
 }
 
 func (m *UserModel) SendMessage(senderId int, receiverId int, messageText string) error {
-	_, err := m.DB.Exec("INSERT INTO messages (sender_id, receiver_id, message_text) VALUES ($1, $2, $3)", senderId, receiverId, messageText)
+	_, err := m.DB.Exec("INSERT INTO messages (sender_id, receiver_id, message_text) VALUES ($1, $2, $3) returning *", senderId, receiverId, messageText)
 
 	if err != nil {
 		return err

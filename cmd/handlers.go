@@ -91,6 +91,7 @@ func SendMessageHandler(userModel *models.UserModel) http.HandlerFunc {
 		if err != nil {
 			return
 		}
+		fmt.Fprintf(writer, "Message sent successfully")
 
 	}
 }
@@ -106,6 +107,7 @@ func UpdateMessageHandler(userModel *models.UserModel) http.HandlerFunc {
 		if err != nil {
 			return
 		}
+		fmt.Fprintf(writer, "Message updated successfully")
 	}
 }
 func DeleteMessageHandler(userModel *models.UserModel) http.HandlerFunc {
@@ -119,7 +121,7 @@ func DeleteMessageHandler(userModel *models.UserModel) http.HandlerFunc {
 		if err != nil {
 			return
 		}
-
+		fmt.Fprintf(writer, "Message deleted successfully")
 	}
 }
 
