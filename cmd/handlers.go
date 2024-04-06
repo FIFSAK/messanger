@@ -75,10 +75,10 @@ func GetAllUsersHandler(userModel *models.UserModel) http.HandlerFunc {
 
 		ordering := request.URL.Query().Get("ordering")
 		if ordering == "" {
-			ordering = "id" // Значение по умолчанию
+			ordering = "user_id" // Значение по умолчанию
 		}
-		filter := request.URL.Query().Get("filter")
 		page := request.URL.Query().Get("page")
+		search := request.URL.Query().Get("search")
 		pageInt, err := strconv.ParseInt(page, 10, 64)
 		if err != nil || pageInt < 1 {
 			pageInt = 1
@@ -95,8 +95,8 @@ func GetAllUsersHandler(userModel *models.UserModel) http.HandlerFunc {
 			return
 		}
 
-		fmt.Println("ordering "+ordering, "filter "+filter, "page "+page)
-		userModel.GetAllUsers(writer, ordering, int(pageInt), direction)
+		fmt.Println("ordering "+ordering, "search "+search, "page "+page)
+		userModel.GetAllUsers(writer, ordering, int(pageInt), direction, search)
 	}
 }
 func SendMessageHandler(userModel *models.UserModel) http.HandlerFunc {
@@ -217,7 +217,7 @@ func GetUnreadMessageHandler(userModle *models.UserModel) http.HandlerFunc {
 	}
 }
 
-func RefreshToken(userModle *models.UserModel) http.HandlerFunc {
+func RefreshToken() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		payload, check := JwtPayloadFromRequest(writer, request)
 		if !check {

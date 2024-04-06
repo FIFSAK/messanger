@@ -152,7 +152,7 @@ func (m *UserModel) DeleteUser(login string, writer http.ResponseWriter) {
 	}
 }
 
-func (m *UserModel) GetAllUsers(writer http.ResponseWriter, ordering string, page int, direction string) {
+func (m *UserModel) GetAllUsers(writer http.ResponseWriter, ordering string, page int, direction string, search string) {
 	limit := 2
 	offset := limit * (page - 1)
 	var totalUsers int
@@ -171,10 +171,11 @@ func (m *UserModel) GetAllUsers(writer http.ResponseWriter, ordering string, pag
 		http.Error(writer, "Page parameter out of range", http.StatusBadRequest)
 		return
 	}
+	query := fmt.Sprintf("SELECT * FROM users WHERE username LIKE $3 ORDER BY %s %s LIMIT $1 OFFSET $2", ordering, direction)
 
-	query := fmt.Sprintf("SELECT * FROM users ORDER BY %s %s LIMIT $1 OFFSET $2", ordering, direction)
+	searchPattern := "%" + search + "%"
+	rows, err := m.DB.Query(query, limit, offset, searchPattern)
 
-	rows, err := m.DB.Query(query, limit, offset)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(writer, "Failed to fetch users", http.StatusInternalServerError)
