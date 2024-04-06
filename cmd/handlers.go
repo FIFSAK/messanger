@@ -228,13 +228,9 @@ func RefreshToken(userModle *models.UserModel) http.HandlerFunc {
 			http.Error(writer, "Invalid receiver ID", http.StatusBadRequest)
 			return
 		}
-		messages, err := userModle.GetUnreadedMessage(int(receiverId))
-		if err != nil {
-			return
-		}
-		err = json.NewEncoder(writer).Encode(messages)
-		if err != nil {
-			return
-		}
+		userName, _ := payload["sub"].(string)
+		err := CreateToken(userName, int(receiverId), writer)
+
+		fmt.Println(err)
 	}
 }

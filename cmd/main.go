@@ -103,6 +103,7 @@ func setupRoutes(router *mux.Router, userModel *models.UserModel) {
 	router.HandleFunc("/message", UpdateMessageHandler(userModel)).Methods("PATCH")
 	router.HandleFunc("/message", DeleteMessageHandler(userModel)).Methods("DELETE")
 	router.HandleFunc("/message/notifications", GetUnreadMessageHandler(userModel)).Methods("GET")
+	router.HandleFunc("/refreshToken", RefreshToken(userModel)).Methods("GET")
 }
 
 func migrationUp(db *sql.DB) {

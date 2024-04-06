@@ -5,13 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/golang-jwt/jwt/v5"
 	"log"
 	"math"
 	. "messanger/pkg/auth"
 	"net/http"
-	"os"
-	"time"
 )
 
 type UserModel struct {
@@ -69,38 +66,10 @@ func (m *UserModel) LoginUser(login string, password string, writer http.Respons
 		return nil
 	}
 	if CheckPasswordHash(password, user.Password) {
-		payload := jwt.MapClaims{
-			"sub": user.Username,
-			"id":  user.Id,
-			"exp": time.Now().Add(time.Hour * 24).Unix(),
-		}
-		payloadRefresh := jwt.MapClaims{
-			"sub": user.Username,
-			"id":  user.Id,
-			"exp": time.Now().Add(time.Hour * 72).Unix(),
-		}
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
-		tokenRefresh := jwt.NewWithClaims(jwt.SigningMethodHS256, payloadRefresh)
-		t, err := token.SignedString([]byte(os.Getenv("secretKey")))
-		if err != nil {
-			http.Error(writer, "jwt token signing", http.StatusBadRequest)
-		}
-		tr, err := tokenRefresh.SignedString([]byte(os.Getenv("secretKey")))
-		if err != nil {
-			http.Error(writer, "jwt refresh token signing", http.StatusBadRequest)
-		}
-
-		err = json.NewEncoder(writer).Encode(struct {
-			Token        string `json:"token"`
-			RefreshToken string `json:"refreshToken"`
-		}{
-			Token:        t,
-			RefreshToken: tr,
-		})
+		err := CreateToken(user.Username, user.Id, writer)
 		if err != nil {
 			return err
 		}
-
 	} else {
 		_, err := fmt.Fprintf(writer, "Wrong password")
 		if err != nil {
@@ -183,13 +152,6 @@ func (m *UserModel) DeleteUser(login string, writer http.ResponseWriter) {
 	}
 }
 
-type UserResponse struct {
-	Users    []User
-	Total    int
-	MaxPages int
-	Page     int
-}
-
 func (m *UserModel) GetAllUsers(writer http.ResponseWriter, ordering string, page int, direction string) {
 	limit := 2
 	offset := limit * (page - 1)
@@ -230,6 +192,12 @@ func (m *UserModel) GetAllUsers(writer http.ResponseWriter, ordering string, pag
 		}
 		users = append(users, user)
 	}
+	type UserResponse struct {
+		Users    []User
+		Total    int
+		MaxPages int
+		Page     int
+	}
 	response := UserResponse{
 		Users:    users,
 		Total:    totalUsers,
@@ -243,3 +211,10 @@ func (m *UserModel) GetAllUsers(writer http.ResponseWriter, ordering string, pag
 		http.Error(writer, "Failed to encode response", http.StatusInternalServerError)
 	}
 }
+
+//func (m *UserModel) GetUser(login string, writer http.ResponseWriter) (id int, username string) {
+//	rows := m.DB.QueryRow("SELECT * FROM users WHERE username = $1", login)
+//	user := User{}
+//	_ = rows.Scan(&user.Id, &user.Username)
+//	return user.Id, user.
+//}
