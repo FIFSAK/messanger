@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"github.com/golang-migrate/migrate/v4"
@@ -13,6 +14,9 @@ import (
 	"messanger/pkg/models"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func main() {
@@ -37,17 +41,34 @@ func main() {
 	// Setup routes with handlers
 	setupRoutes(router, userModel)
 
-	// Start the server
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080" // Порт по умолчанию, если переменная окружения PORT не установлена
+	port := "8080"
+	server := &http.Server{
+		Addr:    ":" + port,
+		Handler: router,
 	}
 
-	err = http.ListenAndServe(":"+port, router)
-	if err != nil {
-		log.Fatal("ListenAndServe:", err)
+	// Ожидание сигналов для graceful shutdown
+	go func() {
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+		<-signals
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := server.Shutdown(ctx); err != nil {
+			log.Fatalf("Graceful shutdown failed: %v\n", err)
+		}
+	}()
+
+	log.Printf("Server is starting on port %s\n", port)
+	// Запуск сервера
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("Server startup failed: %v\n", err)
 	}
-	log.Println("Server started on port", port)
+
+	log.Println("Server gracefully stopped") // Это сообщение выведется при корректной остановке сервера
 }
 
 func initializeDB() (*sql.DB, error) {
@@ -82,6 +103,7 @@ func setupRoutes(router *mux.Router, userModel *models.UserModel) {
 	router.HandleFunc("/message", UpdateMessageHandler(userModel)).Methods("PATCH")
 	router.HandleFunc("/message", DeleteMessageHandler(userModel)).Methods("DELETE")
 	router.HandleFunc("/message/notifications", GetUnreadMessageHandler(userModel)).Methods("GET")
+	router.HandleFunc("/refreshToken", RefreshToken()).Methods("GET")
 }
 
 func migrationUp(db *sql.DB) {
@@ -91,8 +113,11 @@ func migrationUp(db *sql.DB) {
 	}
 
 	// Путь к файлам миграции
+	//m, err := migrate.NewWithDatabaseInstance(
+	//	"file:///usr/src/app/internal/migrations",
+	//	"postgres", driver)
 	m, err := migrate.NewWithDatabaseInstance(
-		"file:///usr/src/app/internal/migrations",
+		"file://internal/migrations",
 		"postgres", driver)
 	if err != nil {
 		log.Fatal(err)

@@ -9,6 +9,7 @@ import (
 	"messanger/pkg/models"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func HealthCheck(writer http.ResponseWriter, request *http.Request) {
@@ -71,7 +72,31 @@ func GetAllUsersHandler(userModel *models.UserModel) http.HandlerFunc {
 		if !check {
 			return
 		}
-		userModel.GetAllUsers(writer)
+
+		ordering := request.URL.Query().Get("ordering")
+		if ordering == "" {
+			ordering = "user_id" // Значение по умолчанию
+		}
+		page := request.URL.Query().Get("page")
+		search := request.URL.Query().Get("search")
+		pageInt, err := strconv.ParseInt(page, 10, 64)
+		if err != nil || pageInt < 1 {
+			pageInt = 1
+		}
+		direction := "asc"
+		if strings.Contains(ordering, "-") {
+			direction = "desc"
+			ordering = ordering[1:len(ordering)]
+		}
+
+		validOrderings := map[string]bool{"user_id": true, "username": true}
+		if _, ok := validOrderings[ordering]; !ok {
+			http.Error(writer, "Invalid ordering parameter", http.StatusBadRequest)
+			return
+		}
+
+		fmt.Println("ordering "+ordering, "search "+search, "page "+page)
+		userModel.GetAllUsers(writer, ordering, int(pageInt), direction, search)
 	}
 }
 func SendMessageHandler(userModel *models.UserModel) http.HandlerFunc {
@@ -189,5 +214,23 @@ func GetUnreadMessageHandler(userModle *models.UserModel) http.HandlerFunc {
 		if err != nil {
 			return
 		}
+	}
+}
+
+func RefreshToken() http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		receiverId, ok := payload["id"].(float64)
+		if !ok {
+			http.Error(writer, "Invalid receiver ID", http.StatusBadRequest)
+			return
+		}
+		userName, _ := payload["sub"].(string)
+		err := CreateToken(userName, int(receiverId), writer)
+
+		fmt.Println(err)
 	}
 }

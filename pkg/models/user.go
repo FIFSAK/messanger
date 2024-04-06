@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/golang-jwt/jwt/v5"
 	"log"
+	"math"
 	. "messanger/pkg/auth"
 	"net/http"
-	"os"
-	"time"
 )
 
 type UserModel struct {
@@ -68,28 +66,10 @@ func (m *UserModel) LoginUser(login string, password string, writer http.Respons
 		return nil
 	}
 	if CheckPasswordHash(password, user.Password) {
-		payload := jwt.MapClaims{
-			"sub": user.Username,
-			"id":  user.Id,
-			"exp": time.Now().Add(time.Hour * 72).Unix(),
-		}
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
-		t, err := token.SignedString([]byte(os.Getenv("secretKey")))
-		fmt.Println(os.Getenv("secretKey"))
-
-		if err != nil {
-			http.Error(writer, "jwt token signing", http.StatusBadRequest)
-		}
-
-		err = json.NewEncoder(writer).Encode(struct {
-			Token string `json:"token"`
-		}{
-			Token: t,
-		})
+		err := CreateToken(user.Username, user.Id, writer)
 		if err != nil {
 			return err
 		}
-
 	} else {
 		_, err := fmt.Fprintf(writer, "Wrong password")
 		if err != nil {
@@ -172,9 +152,32 @@ func (m *UserModel) DeleteUser(login string, writer http.ResponseWriter) {
 	}
 }
 
-func (m *UserModel) GetAllUsers(writer http.ResponseWriter) {
-	rows, err := m.DB.Query("SELECT * FROM users")
+func (m *UserModel) GetAllUsers(writer http.ResponseWriter, ordering string, page int, direction string, search string) {
+	limit := 2
+	offset := limit * (page - 1)
+	var totalUsers int
+	countQuery := "SELECT COUNT(*) FROM users"
+	err := m.DB.QueryRow(countQuery).Scan(&totalUsers)
 	if err != nil {
+		fmt.Println(err)
+		http.Error(writer, "Failed to fetch user count", http.StatusInternalServerError)
+		return
+	}
+
+	// Расчет максимального количества страниц
+	maxPages := int(math.Ceil(float64(totalUsers) / float64(limit)))
+
+	if page < 0 && maxPages < page {
+		http.Error(writer, "Page parameter out of range", http.StatusBadRequest)
+		return
+	}
+	query := fmt.Sprintf("SELECT * FROM users WHERE username LIKE $3 ORDER BY %s %s LIMIT $1 OFFSET $2", ordering, direction)
+
+	searchPattern := "%" + search + "%"
+	rows, err := m.DB.Query(query, limit, offset, searchPattern)
+
+	if err != nil {
+		fmt.Println(err)
 		http.Error(writer, "Failed to fetch users", http.StatusInternalServerError)
 		return
 	}
@@ -190,8 +193,29 @@ func (m *UserModel) GetAllUsers(writer http.ResponseWriter) {
 		}
 		users = append(users, user)
 	}
-	_, err = fmt.Fprintf(writer, "%v", users)
-	if err != nil {
-		return
+	type UserResponse struct {
+		Users    []User
+		Total    int
+		MaxPages int
+		Page     int
+	}
+	response := UserResponse{
+		Users:    users,
+		Total:    totalUsers,
+		MaxPages: maxPages,
+		Page:     page,
+	}
+
+	writer.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(writer).Encode(response); err != nil {
+		fmt.Println(err)
+		http.Error(writer, "Failed to encode response", http.StatusInternalServerError)
 	}
 }
+
+//func (m *UserModel) GetUser(login string, writer http.ResponseWriter) (id int, username string) {
+//	rows := m.DB.QueryRow("SELECT * FROM users WHERE username = $1", login)
+//	user := User{}
+//	_ = rows.Scan(&user.Id, &user.Username)
+//	return user.Id, user.
+//}
