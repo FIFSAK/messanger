@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"log"
+	"math"
 	. "messanger/pkg/auth"
 	"net/http"
 	"os"
@@ -71,20 +72,30 @@ func (m *UserModel) LoginUser(login string, password string, writer http.Respons
 		payload := jwt.MapClaims{
 			"sub": user.Username,
 			"id":  user.Id,
+			"exp": time.Now().Add(time.Hour * 24).Unix(),
+		}
+		payloadRefresh := jwt.MapClaims{
+			"sub": user.Username,
+			"id":  user.Id,
 			"exp": time.Now().Add(time.Hour * 72).Unix(),
 		}
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
+		tokenRefresh := jwt.NewWithClaims(jwt.SigningMethodHS256, payloadRefresh)
 		t, err := token.SignedString([]byte(os.Getenv("secretKey")))
-		fmt.Println(os.Getenv("secretKey"))
-
 		if err != nil {
 			http.Error(writer, "jwt token signing", http.StatusBadRequest)
 		}
+		tr, err := tokenRefresh.SignedString([]byte(os.Getenv("secretKey")))
+		if err != nil {
+			http.Error(writer, "jwt refresh token signing", http.StatusBadRequest)
+		}
 
 		err = json.NewEncoder(writer).Encode(struct {
-			Token string `json:"token"`
+			Token        string `json:"token"`
+			RefreshToken string `json:"refreshToken"`
 		}{
-			Token: t,
+			Token:        t,
+			RefreshToken: tr,
 		})
 		if err != nil {
 			return err
@@ -172,11 +183,38 @@ func (m *UserModel) DeleteUser(login string, writer http.ResponseWriter) {
 	}
 }
 
+type UserResponse struct {
+	Users    []User
+	Total    int
+	MaxPages int
+	Page     int
+}
+
 func (m *UserModel) GetAllUsers(writer http.ResponseWriter, ordering string, page int, direction string) {
 	limit := 2
 	offset := limit * (page - 1)
-	rows, err := m.DB.Query("SELECT * FROM users ORDER BY $1, $2 limit $3 offset $4", ordering, direction, limit, offset)
+	var totalUsers int
+	countQuery := "SELECT COUNT(*) FROM users"
+	err := m.DB.QueryRow(countQuery).Scan(&totalUsers)
 	if err != nil {
+		fmt.Println(err)
+		http.Error(writer, "Failed to fetch user count", http.StatusInternalServerError)
+		return
+	}
+
+	// Расчет максимального количества страниц
+	maxPages := int(math.Ceil(float64(totalUsers) / float64(limit)))
+
+	if page < 0 && maxPages < page {
+		http.Error(writer, "Page parameter out of range", http.StatusBadRequest)
+		return
+	}
+
+	query := fmt.Sprintf("SELECT * FROM users ORDER BY %s %s LIMIT $1 OFFSET $2", ordering, direction)
+
+	rows, err := m.DB.Query(query, limit, offset)
+	if err != nil {
+		fmt.Println(err)
 		http.Error(writer, "Failed to fetch users", http.StatusInternalServerError)
 		return
 	}
@@ -192,8 +230,16 @@ func (m *UserModel) GetAllUsers(writer http.ResponseWriter, ordering string, pag
 		}
 		users = append(users, user)
 	}
-	_, err = fmt.Fprintf(writer, "%v", users)
-	if err != nil {
-		return
+	response := UserResponse{
+		Users:    users,
+		Total:    totalUsers,
+		MaxPages: maxPages,
+		Page:     page,
+	}
+
+	writer.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(writer).Encode(response); err != nil {
+		fmt.Println(err)
+		http.Error(writer, "Failed to encode response", http.StatusInternalServerError)
 	}
 }

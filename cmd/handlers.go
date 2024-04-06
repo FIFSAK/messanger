@@ -74,14 +74,27 @@ func GetAllUsersHandler(userModel *models.UserModel) http.HandlerFunc {
 		}
 
 		ordering := request.URL.Query().Get("ordering")
+		if ordering == "" {
+			ordering = "id" // Значение по умолчанию
+		}
 		filter := request.URL.Query().Get("filter")
 		page := request.URL.Query().Get("page")
-		pageInt, _ := strconv.ParseInt(page, 10, 32)
-
+		pageInt, err := strconv.ParseInt(page, 10, 64)
+		if err != nil || pageInt < 1 {
+			pageInt = 1
+		}
 		direction := "asc"
 		if strings.Contains(ordering, "-") {
 			direction = "desc"
+			ordering = ordering[1:len(ordering)]
 		}
+
+		validOrderings := map[string]bool{"user_id": true, "username": true}
+		if _, ok := validOrderings[ordering]; !ok {
+			http.Error(writer, "Invalid ordering parameter", http.StatusBadRequest)
+			return
+		}
+
 		fmt.Println("ordering "+ordering, "filter "+filter, "page "+page)
 		userModel.GetAllUsers(writer, ordering, int(pageInt), direction)
 	}
@@ -183,6 +196,28 @@ func GetReceivedMessageHandler(userModle *models.UserModel) http.HandlerFunc {
 }
 
 func GetUnreadMessageHandler(userModle *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		receiverId, ok := payload["id"].(float64)
+		if !ok {
+			http.Error(writer, "Invalid receiver ID", http.StatusBadRequest)
+			return
+		}
+		messages, err := userModle.GetUnreadedMessage(int(receiverId))
+		if err != nil {
+			return
+		}
+		err = json.NewEncoder(writer).Encode(messages)
+		if err != nil {
+			return
+		}
+	}
+}
+
+func RefreshToken(userModle *models.UserModel) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		payload, check := JwtPayloadFromRequest(writer, request)
 		if !check {
