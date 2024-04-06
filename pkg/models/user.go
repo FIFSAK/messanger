@@ -172,8 +172,10 @@ func (m *UserModel) DeleteUser(login string, writer http.ResponseWriter) {
 	}
 }
 
-func (m *UserModel) GetAllUsers(writer http.ResponseWriter) {
-	rows, err := m.DB.Query("SELECT * FROM users")
+func (m *UserModel) GetAllUsers(writer http.ResponseWriter, ordering string, page int, direction string) {
+	limit := 2
+	offset := limit * (page - 1)
+	rows, err := m.DB.Query("SELECT * FROM users ORDER BY $1, $2 limit $3 offset $4", ordering, direction, limit, offset)
 	if err != nil {
 		http.Error(writer, "Failed to fetch users", http.StatusInternalServerError)
 		return

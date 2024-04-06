@@ -9,6 +9,7 @@ import (
 	"messanger/pkg/models"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func HealthCheck(writer http.ResponseWriter, request *http.Request) {
@@ -71,7 +72,18 @@ func GetAllUsersHandler(userModel *models.UserModel) http.HandlerFunc {
 		if !check {
 			return
 		}
-		userModel.GetAllUsers(writer)
+
+		ordering := request.URL.Query().Get("ordering")
+		filter := request.URL.Query().Get("filter")
+		page := request.URL.Query().Get("page")
+		pageInt, _ := strconv.ParseInt(page, 10, 32)
+
+		direction := "asc"
+		if strings.Contains(ordering, "-") {
+			direction = "desc"
+		}
+		fmt.Println("ordering "+ordering, "filter "+filter, "page "+page)
+		userModel.GetAllUsers(writer, ordering, int(pageInt), direction)
 	}
 }
 func SendMessageHandler(userModel *models.UserModel) http.HandlerFunc {
