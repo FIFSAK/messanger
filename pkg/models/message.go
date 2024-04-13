@@ -26,12 +26,19 @@ func (m *UserModel) UpdateMessage(messageId int, messageText string) error {
 	return nil
 }
 
-func (m *UserModel) DeleteMessage(message_id int) error {
-	_, err := m.DB.Exec("DELETE FROM messages WHERE message_id = $1", message_id)
+func (m *UserModel) DeleteMessage(message_id int, sender_id int) (bool, error) {
+	result, err := m.DB.Exec("DELETE FROM messages WHERE message_id = $1 and sender_id = $2", message_id, sender_id)
 	if err != nil {
-		return err
+		return false, err
 	}
-	return nil
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	if rowsAffected == 0 {
+		return false, nil // No rows affected, might return a custom error instead
+	}
+	return true, nil
 }
 
 func (m *UserModel) GetSendMessage(senderId int) ([]Message, error) {

@@ -21,7 +21,8 @@
 - **Response:**
 ```json lines
 {
-  "token": "your_jwt_token"
+  "token": "your_jwt_token",
+  "refreshToken": "your_refresh_token"
 }
 ```
 

@@ -137,13 +137,23 @@ func UpdateMessageHandler(userModel *models.UserModel) http.HandlerFunc {
 }
 func DeleteMessageHandler(userModel *models.UserModel) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		_, check := JwtPayloadFromRequest(writer, request)
+		payload, check := JwtPayloadFromRequest(writer, request)
 		if !check {
 			return
 		}
+		senderId, ok := payload["id"].(float64)
+		if !ok {
+			http.Error(writer, "Invalid sender ID", http.StatusBadRequest)
+			return
+		}
 		messageId, _ := strconv.ParseInt(request.FormValue("message_id"), 10, 64)
-		err := userModel.DeleteMessage(int(messageId))
+		deleted, err := userModel.DeleteMessage(int(messageId), int(senderId))
 		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !deleted {
+			http.Error(writer, "No message found to delete", http.StatusNotFound)
 			return
 		}
 		fmt.Fprintf(writer, "Message deleted successfully")
