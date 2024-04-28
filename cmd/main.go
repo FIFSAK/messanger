@@ -104,6 +104,14 @@ func setupRoutes(router *mux.Router, userModel *models.UserModel) {
 	router.HandleFunc("/message", DeleteMessageHandler(userModel)).Methods("DELETE")
 	router.HandleFunc("/message/notifications", GetUnreadMessageHandler(userModel)).Methods("GET")
 	router.HandleFunc("/refreshToken", RefreshToken()).Methods("GET")
+	router.HandleFunc("/channel", CreateChannelHandler(userModel)).Methods("POST")
+	router.HandleFunc("/channel", UpdateChannelHandler(userModel)).Methods("PATCH")
+	router.HandleFunc("/channel", DeleteChannelHandler(userModel)).Methods("DELETE")
+	router.HandleFunc("/channel", GetAllChannelsHandler(userModel)).Methods("GET")
+	router.HandleFunc("/channel/follow", FollowChannelHandler(userModel)).Methods("POST")
+	router.HandleFunc("/channel/follow", UnFollowChannelHandler(userModel)).Methods("DELETE")
+	router.HandleFunc("/channel/follow/message", SendMessageToChannelHandler(userModel)).Methods("POST")
+	router.HandleFunc("/channel/follow/message", GetFollowedChannelsMessages(userModel)).Methods("GET")
 }
 
 func migrationUp(db *sql.DB) {

@@ -258,9 +258,14 @@ func CreateChannelHandler(userModel *models.UserModel) http.HandlerFunc {
 			return
 		}
 		channelName := request.FormValue("channel_name")
+		if channelName == "" {
+			http.Error(writer, "Channel name is required", http.StatusBadRequest)
+			return
+		}
 		err := userModel.CreateChannel(int(ownerId), channelName)
 		if err != nil {
-			fmt.Fprintf(writer, "Failed to create channel")
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
 		}
 		fmt.Fprintf(writer, "Channel created successfully")
 	}

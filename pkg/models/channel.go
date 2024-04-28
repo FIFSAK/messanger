@@ -1,6 +1,9 @@
 package models
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 type Channel struct {
 	ChanelId   int    `json:"chanelId"`
@@ -103,15 +106,23 @@ func (m *UserModel) SendMessageToChannel(chanelId int, messageText string, owner
 	return errors.New("You are not the owner of this channel")
 }
 
-func (m *UserModel) GetFollowedChannelsMessages(userId int) ([]ChannelMessages, error) {
+type ChannelMessagesResponse struct {
+	MessageText string `json:"messageText"`
+	UserId      int    `json:"userId"`
+	ChanelName  string `json:"chanelName"`
+}
+
+func (m *UserModel) GetFollowedChannelsMessages(userId int) ([]ChannelMessagesResponse, error) {
+	fmt.Println(userId)
+
 	rows, err := m.DB.Query("select message_text, user_id, chanel_name from channelmessages as cm join channelusers as cu on cm.chanel_id = cu.chanel_id join channel as c on cu.chanel_id = c.chanel_id where cu.user_id = $1", userId)
 	if err != nil {
 		return nil, err
 	}
-	var messages []ChannelMessages
+	var messages []ChannelMessagesResponse
 	for rows.Next() {
-		var message ChannelMessages
-		err := rows.Scan(&message.ChanelMessageId, &message.ChanelId, &message.MessageText, &message.SentAt)
+		var message ChannelMessagesResponse
+		err := rows.Scan(&message.MessageText, &message.UserId, &message.ChanelName)
 		if err != nil {
 			return nil, err
 		}
