@@ -244,3 +244,177 @@ func RefreshToken() http.HandlerFunc {
 		fmt.Println(err)
 	}
 }
+
+// Channels handlers
+func CreateChannelHandler(userModel *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		ownerId, ok := payload["id"].(float64)
+		if !ok {
+			http.Error(writer, "Invalid owner ID", http.StatusBadRequest)
+			return
+		}
+		channelName := request.FormValue("channel_name")
+		err := userModel.CreateChannel(int(ownerId), channelName)
+		if err != nil {
+			fmt.Fprintf(writer, "Failed to create channel")
+		}
+		fmt.Fprintf(writer, "Channel created successfully")
+	}
+}
+
+func UpdateChannelHandler(userModel *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		ownerId, ok := payload["id"].(float64)
+		if !ok {
+			http.Error(writer, "Invalid owner ID", http.StatusBadRequest)
+			return
+		}
+		channelId, _ := strconv.ParseInt(request.FormValue("channel_id"), 10, 64)
+		channelName := request.FormValue("channel_name")
+		err := userModel.UpdateChannel(int(channelId), channelName, int(ownerId))
+		if err != nil {
+			fmt.Fprintf(writer, "Failed to update channel")
+		}
+		fmt.Fprintf(writer, "Channel updated successfully")
+	}
+}
+
+func DeleteChannelHandler(userModel *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		ownerId, ok := payload["id"].(float64)
+		if !ok {
+			http.Error(writer, "Invalid owner ID", http.StatusBadRequest)
+			return
+		}
+		channelId, _ := strconv.ParseInt(request.FormValue("channel_id"), 10, 64)
+		deleted, err := userModel.DeleteChannel(int(channelId), int(ownerId))
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !deleted {
+			http.Error(writer, "No channel found to delete", http.StatusNotFound)
+			return
+		}
+		fmt.Fprintf(writer, "Channel deleted successfully")
+	}
+}
+
+func GetAllChannelsHandler(userModel *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		_, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		channels, err := userModel.GetAllChannels()
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		err = json.NewEncoder(writer).Encode(channels)
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+func FollowChannelHandler(userModel *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		userId, ok := payload["id"].(float64)
+		if !ok {
+			http.Error(writer, "Invalid user ID", http.StatusBadRequest)
+			return
+		}
+		channelId, _ := strconv.ParseInt(request.FormValue("channel_id"), 10, 64)
+		err := userModel.FollowChannel(int(userId), int(channelId))
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		fmt.Fprintf(writer, "Channel followed successfully")
+	}
+}
+
+func UnFollowChannelHandler(userModel *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		userId, ok := payload["id"].(float64)
+		if !ok {
+			http.Error(writer, "Invalid user ID", http.StatusBadRequest)
+			return
+		}
+		channelId, _ := strconv.ParseInt(request.FormValue("channel_id"), 10, 64)
+		err := userModel.UnFollowChannel(int(userId), int(channelId))
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		fmt.Fprintf(writer, "Channel unfollowed successfully")
+	}
+}
+
+func SendMessageToChannelHandler(userModel *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		ownerId, ok := payload["id"].(float64)
+		if !ok {
+			http.Error(writer, "Invalid owner ID", http.StatusBadRequest)
+			return
+		}
+		channelId, _ := strconv.ParseInt(request.FormValue("channel_id"), 10, 64)
+		messageText := request.FormValue("message")
+		err := userModel.SendMessageToChannel(int(channelId), messageText, int(ownerId))
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		fmt.Fprintf(writer, "Message sent successfully")
+	}
+}
+
+func GetFollowedChannelsMessages(userModel *models.UserModel) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		payload, check := JwtPayloadFromRequest(writer, request)
+		if !check {
+			return
+		}
+		userId, ok := payload["id"].(float64)
+		if !ok {
+			http.Error(writer, "Invalid user ID", http.StatusBadRequest)
+			return
+		}
+		messages, err := userModel.GetFollowedChannelsMessages(int(userId))
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		err = json.NewEncoder(writer).Encode(messages)
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}

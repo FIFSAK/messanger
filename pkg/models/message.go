@@ -19,7 +19,7 @@ func (m *UserModel) SendMessage(senderId int, receiverId int, messageText string
 }
 
 func (m *UserModel) UpdateMessage(messageId int, messageText string) error {
-	_, err := m.DB.Exec("UPDATE messages SET message_text = $1, readed = $2 WHERE message_id = $3", messageText, false, messageId)
+	_, err := m.DB.Exec("UPDATE messages SET message_text = $1, read = $2 WHERE message_id = $3", messageText, false, messageId)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (m *UserModel) GetSendMessage(senderId int) ([]Message, error) {
 }
 
 func (m *UserModel) GetReceivedMessage(receiverId int) ([]Message, error) {
-	rows, err := m.DB.Query("SELECT * FROM messages WHERE receiver_id = $1 AND readed = true", receiverId)
+	rows, err := m.DB.Query("SELECT * FROM messages WHERE receiver_id = $1 AND read = true", receiverId)
 	if err != nil {
 		return nil, err
 	}
@@ -78,11 +78,11 @@ func (m *UserModel) GetReceivedMessage(receiverId int) ([]Message, error) {
 }
 
 func (m *UserModel) GetUnreadedMessage(receiverId int) ([]Message, error) {
-	rows, err := m.DB.Query("SELECT * FROM messages WHERE receiver_id = $1 AND readed = false", receiverId)
+	rows, err := m.DB.Query("SELECT * FROM messages WHERE receiver_id = $1 AND read = false", receiverId)
 	if err != nil {
 		return nil, err
 	}
-	_, err = m.DB.Exec("UPDATE  messages SET readed = true WHERE receiver_id = $1 and readed = false", receiverId)
+	_, err = m.DB.Exec("UPDATE  messages SET read = true WHERE receiver_id = $1 and read = false", receiverId)
 	if err != nil {
 		return nil, err
 	}
