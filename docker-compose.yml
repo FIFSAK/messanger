@@ -3,8 +3,10 @@ services:
   app:
     container_name: main_app
     build: .
+    env_file:
+      - .env
     ports:
-      - "10000:10000"
+      - "4000:4000"
     restart: on-failure
     volumes:
       - .:/usr/src/app
