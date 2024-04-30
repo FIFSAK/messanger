@@ -75,6 +75,51 @@
     - **Header:** `Authorization: Bearer <Your API key>`
     - **Response:** list of unread messages
 
+### Create a Channel
+- `POST /channel`
+    - **Header:** `Authorization: Bearer <Your API key>`
+    - **Body:**Use `multipart/form-data` to send the following fields:
+        - `channel_name` (text): name of the channel
+### Update a Channel
+- `PATCH /channel`
+    - **Header:** `Authorization: Bearer <Your API key>`
+    - **Body:**Use `multipart/form-data` to send the following fields:
+        - `channel_id` (text): ID of the channel
+        - `channel_name` (text): name of the channel
+
+### Get Channels
+- `GET /channel`
+    - **Header:** `Authorization: Bearer <Your API key>`
+
+### Delete a Channel
+- `DELETE /channel`
+    - **Header:** `Authorization: Bearer <Your API key`
+    - **Body:**Use `multipart/form-data` to send the following fields:
+        - `channel_id` (text): ID of the channel
+
+### Follow a Channel
+- `POST /channel/follow`
+    - **Header:** `Authorization: Bearer <Your API key>`
+    - **Body:**Use `multipart/form-data` to send the following fields:
+        - `channel_id` (text): ID of the channel
+
+### Unfollow a Channel
+- `DELETE /channel/follow`
+    - **Header:** `Authorization Bearer <Your API key>`
+    - **Body:**Use `multipart/form-data` to send the following fields:
+        - `channel_id` (text): ID of the channel
+
+### Send Message to Channel
+- `POST /channel/follow/message`
+    - **Header:** `Authorization: Bearer <Your API key>`
+    - **Body:**Use `multipart/form-data` to send the following fields:
+        - `channel_id` (text): ID of the channel
+        - `message_text` (text): The message content
+
+### Get Messages from followed Channels
+- `GET /channel/follow/message`
+    - **Header:** `Authorization Bearer <Your API key>`
+
 
 ## Database Structure
 
@@ -90,7 +135,7 @@ Table Messages {
   sender_id INTEGER [not null, ref: > Users.user_id]
   receiver_id INTEGER [not null, ref: > Users.user_id]
   message_text TEXT [not null]
-  readed BOOLEAN [default: false]
+  read BOOLEAN [default: false]
   sent_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
 }
 ```

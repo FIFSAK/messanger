@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -41,7 +40,11 @@ func main() {
 	// Setup routes with handlers
 	setupRoutes(router, userModel)
 
-	port := "8080"
+	//port := os.Getenv("PORT")
+	//if port == "" {
+	//	port = "4000"
+	//}
+	port := "4000"
 	server := &http.Server{
 		Addr:    ":" + port,
 		Handler: router,
@@ -72,12 +75,12 @@ func main() {
 }
 
 func initializeDB() (*sql.DB, error) {
-	connStr := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		os.Getenv("host"), os.Getenv("port"), os.Getenv("user"),
-		os.Getenv("password"), os.Getenv("dbname"), os.Getenv("sslmode"),
-	)
-	db, err := sql.Open("postgres", connStr)
+	dbURL := os.Getenv("DATABASE_URL") // Make sure this environment variable is set in Render's settings
+	if dbURL == "" {
+		log.Fatal("DATABASE_URL is not set")
+	}
+
+	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		return nil, err
 	}
@@ -88,6 +91,22 @@ func initializeDB() (*sql.DB, error) {
 	migrationUp(db)
 
 	return db, nil
+	//connStr := fmt.Sprintf(
+	//	"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+	//	os.Getenv("host"), os.Getenv("port"), os.Getenv("user"),
+	//	os.Getenv("password"), os.Getenv("dbname"), os.Getenv("sslmode"),
+	//)
+	//db, err := sql.Open("postgres", connStr)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//if err := db.Ping(); err != nil {
+	//	return nil, err
+	//}
+	//
+	//migrationUp(db)
+	//
+	//return db, nil
 }
 
 func setupRoutes(router *mux.Router, userModel *models.UserModel) {
@@ -104,6 +123,14 @@ func setupRoutes(router *mux.Router, userModel *models.UserModel) {
 	router.HandleFunc("/message", DeleteMessageHandler(userModel)).Methods("DELETE")
 	router.HandleFunc("/message/notifications", GetUnreadMessageHandler(userModel)).Methods("GET")
 	router.HandleFunc("/refreshToken", RefreshToken()).Methods("GET")
+	router.HandleFunc("/channel", CreateChannelHandler(userModel)).Methods("POST")
+	router.HandleFunc("/channel", UpdateChannelHandler(userModel)).Methods("PATCH")
+	router.HandleFunc("/channel", DeleteChannelHandler(userModel)).Methods("DELETE")
+	router.HandleFunc("/channel", GetAllChannelsHandler(userModel)).Methods("GET")
+	router.HandleFunc("/channel/follow", FollowChannelHandler(userModel)).Methods("POST")
+	router.HandleFunc("/channel/follow", UnFollowChannelHandler(userModel)).Methods("DELETE")
+	router.HandleFunc("/channel/follow/message", SendMessageToChannelHandler(userModel)).Methods("POST")
+	router.HandleFunc("/channel/follow/message", GetFollowedChannelsMessages(userModel)).Methods("GET")
 }
 
 func migrationUp(db *sql.DB) {

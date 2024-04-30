@@ -12,7 +12,7 @@ services:
       - key: dbname
         sync: false
       - key: sslmode
-        sync: false
+        sync: falsez`
       - key: port
         sync: false
       - key: user
