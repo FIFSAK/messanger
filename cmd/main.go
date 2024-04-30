@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -75,12 +74,12 @@ func main() {
 }
 
 func initializeDB() (*sql.DB, error) {
-	connStr := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		os.Getenv("host"), os.Getenv("port"), os.Getenv("user"),
-		os.Getenv("password"), os.Getenv("dbname"), os.Getenv("sslmode"),
-	)
-	db, err := sql.Open("postgres", connStr)
+	dbURL := os.Getenv("DATABASE_URL") // Make sure this environment variable is set in Render's settings
+	if dbURL == "" {
+		log.Fatal("DATABASE_URL is not set")
+	}
+
+	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		return nil, err
 	}
