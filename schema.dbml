@@ -9,6 +9,30 @@ Table Messages {
   sender_id INTEGER [not null, ref: > Users.user_id]
   receiver_id INTEGER [not null, ref: > Users.user_id]
   message_text TEXT [not null]
-  readed BOOLEAN [default: false]
+  read BOOLEAN [default: false]
   sent_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
 }
+
+Table Channel
+(
+    chanel_id SERIAL [pk]
+    owner_id INTEGER NOT NULL [not null, ref: > Users.user_id]
+    chanel_name VARCHAR(50) UNIQUE NOT NULL
+);
+
+
+Table ChannelUsers
+(
+    chanel_user_id SERIAL [pk]
+    chanel_id INTEGER [not null, ref: > Channel.chanel_id]
+    user_id INTEGER [not null, ref: > Users.user_id]
+);
+
+
+Table ChannelMessages
+(
+    chanel_message_id SERIAL [pk]
+    chanel_id INTEGER NOT NULL [not null, ref: > Channel.chanel_id]
+    message_text TEXT NOT NULL,
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
