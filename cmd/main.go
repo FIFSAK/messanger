@@ -43,7 +43,7 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "10000"
+		port = "4000"
 	}
 	server := &http.Server{
 		Addr:    ":" + port,
