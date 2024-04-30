@@ -41,7 +41,7 @@ func main() {
 	// Setup routes with handlers
 	setupRoutes(router, userModel)
 
-	port := "8080"
+	port := "10000"
 	server := &http.Server{
 		Addr:    ":" + port,
 		Handler: router,
