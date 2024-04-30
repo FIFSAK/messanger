@@ -41,7 +41,10 @@ func main() {
 	// Setup routes with handlers
 	setupRoutes(router, userModel)
 
-	port := "10000"
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "10000"
+	}
 	server := &http.Server{
 		Addr:    ":" + port,
 		Handler: router,
