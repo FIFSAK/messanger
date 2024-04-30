@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS Messages
     receiver_id  INTEGER NOT NULL,
     message_text TEXT    NOT NULL,
     sent_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    readed       BOOLEAN   DEFAULT FALSE,
+    read       BOOLEAN   DEFAULT FALSE,
     FOREIGN KEY (sender_id) REFERENCES Users (user_id),
     FOREIGN KEY (receiver_id) REFERENCES Users (user_id)
 );
