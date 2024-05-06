@@ -79,7 +79,7 @@ func initializeDB() (*sql.DB, error) {
 	if dbURL == "" {
 		log.Fatal("DATABASE_URL is not set")
 	}
-
+	
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		return nil, err
